@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
+import helmetPkg from "helmet";
 import cookieParser from "cookie-parser";
 import { env } from "./lib/env.js";
 import healthRoutes from "./routes/health.js";
@@ -15,6 +15,8 @@ import aiRoutes from "./routes/ai.js";
 import { authLimiter, aiLimiter } from "./middleware/rate-limit.js";
 import { HttpError } from "./lib/errors.js";
 import type { NextFunction, Request, Response } from "express";
+
+const helmet = helmetPkg as unknown as () => import("express").RequestHandler;
 
 export function createApp() {
   const app = express();
