@@ -47,6 +47,16 @@ The Next API catch-all in `apps/web/src/pages/api/[...path].ts` forwards request
 
 Socket.IO is still local/backend-driven. On Vercel the app will safely stay idle if no `NEXT_PUBLIC_SOCKET_URL` is set.
 
+## Automatic redeploys
+
+This repo now includes a GitHub Action that can trigger a Vercel production deploy on every push to `main`.
+
+1. Create a Vercel Deploy Hook for the YowlChat project
+2. Add it to GitHub repository secrets as `VERCEL_DEPLOY_HOOK_URL`
+3. Push to `main`
+
+If the secret is missing, the workflow skips deployment safely and prints a warning instead of failing the build.
+
 ## Structure
 
 - `apps/web` - Next.js frontend
