@@ -21,6 +21,7 @@ model User {
   avatarUrl       String?
   bio             String?
   location        String?
+  locale          String           @default("nl")
   theme           String           @default("dark")
   publicProfile   Boolean          @default(true)
   isGhostMode     Boolean          @default(false)

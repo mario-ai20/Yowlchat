@@ -76,7 +76,12 @@ export default function Page() {
                   sessionUser?.displayName ||
                   "Not set"
               },
-              { label: "Birthdate", value: sessionUser?.birthDate ? new Date(sessionUser.birthDate).toLocaleDateString() : "Not set" },
+              {
+                label: "Birthdate",
+                value: sessionUser?.birthDate
+                  ? new Date(sessionUser.birthDate).toLocaleDateString(sessionUser.locale)
+                  : "Not set"
+              },
               { label: "Phone", value: sessionUser?.phoneNumber ?? "Not set" },
               { label: "Gender", value: formatGender(sessionUser?.gender) }
             ].map((item) => (

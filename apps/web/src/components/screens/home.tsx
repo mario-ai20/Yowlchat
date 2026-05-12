@@ -677,8 +677,8 @@ export function HomeScreen() {
                     <p className="text-lg font-semibold">{sessionUser.displayName}</p>
                     <p className="mt-1 text-sm text-white/50">@{sessionUser.username}</p>
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      <Badge>{formatCompactNumber(sessionUser.flames)} Flames</Badge>
-                      <Badge>{formatCompactNumber(sessionUser.yowlScore)} YowlScore</Badge>
+                      <Badge>{formatCompactNumber(sessionUser.flames, sessionUser.locale)} Flames</Badge>
+                      <Badge>{formatCompactNumber(sessionUser.yowlScore, sessionUser.locale)} YowlScore</Badge>
                       <Badge>{sessionUser.isGhostMode ? "Ghost mode" : "Visible"}</Badge>
                     </div>
                   </div>

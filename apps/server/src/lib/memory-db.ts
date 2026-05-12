@@ -13,6 +13,7 @@ type UserRecord = BaseRecord & {
   avatarUrl: string | null;
   bio: string | null;
   location: string | null;
+  locale: string;
   publicProfile: boolean;
   isGhostMode: boolean;
   flames: number;
@@ -359,6 +360,7 @@ class MemoryPrisma {
         avatarUrl: args.data.avatarUrl ?? null,
         bio: args.data.bio ?? null,
         location: args.data.location ?? null,
+        locale: args.data.locale ?? "nl",
         publicProfile: args.data.publicProfile ?? true,
         isGhostMode: args.data.isGhostMode ?? false,
         flames: args.data.flames ?? 0,

@@ -44,6 +44,7 @@ export function serializeUser(user: UserRecord, extras: Partial<{ friendsCount: 
     avatarUrl: user.avatarUrl,
     bio: user.bio,
     location: user.location,
+    locale: user.locale,
     theme: user.theme === "light" ? "light" : "dark",
     publicProfile: user.publicProfile,
     isGhostMode: user.isGhostMode,

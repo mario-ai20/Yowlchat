@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import type { ReactNode } from "react";
+import { DEFAULT_APP_LOCALE } from "@yowl/types";
 import { ThemeBootstrap } from "../components/theme-bootstrap";
 
 const display = Space_Grotesk({
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+    <html lang={DEFAULT_APP_LOCALE} className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <body className="noise antialiased">
         <ThemeBootstrap />
         {children}

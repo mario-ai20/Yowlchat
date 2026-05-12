@@ -8,6 +8,7 @@ import { authenticateRequest, type AuthenticatedRequest } from "../middleware/au
 import { getClientIp } from "../lib/http.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt.js";
 import { serializeUser } from "../lib/serializers.js";
+import { APP_LOCALE_CODES, type AppLocale } from "@yowl/types";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ const registerSchema = z.object({
   birthDate: z.coerce.date(),
   phoneNumber: z.string().min(6).max(32),
   gender: z.enum(["man", "vrouw", "geen_van_beide"]),
+  locale: z.enum(APP_LOCALE_CODES).default("nl"),
   theme: z.enum(["light", "dark"]).default("dark"),
   password: z.string().min(8).max(128),
 });
@@ -41,6 +43,7 @@ const updateMeSchema = z.object({
   bio: z.string().max(160).nullable().optional(),
   location: z.string().max(80).nullable().optional(),
   avatarUrl: z.string().url().nullable().optional(),
+  locale: z.enum(APP_LOCALE_CODES).optional(),
   theme: z.enum(["light", "dark"]).optional(),
   pushNotificationsEnabled: z.boolean().optional(),
   autoSaveEchoes: z.boolean().optional(),
@@ -74,6 +77,10 @@ function createDisplayName(firstName: string, lastName: string) {
   return `${firstName.trim()} ${lastName.trim()}`.replace(/\s+/g, " ").trim();
 }
 
+function normalizeAppLocale(locale: string | null | undefined): AppLocale {
+  return APP_LOCALE_CODES.includes(locale as AppLocale) ? (locale as AppLocale) : "nl";
+}
+
 async function syncCoreUser(user: {
   id: string;
   email: string;
@@ -90,6 +97,7 @@ async function syncCoreUser(user: {
   avatarUrl: string | null;
   bio: string | null;
   location: string | null;
+  locale: string;
   publicProfile: boolean;
   isGhostMode: boolean;
   flames: number;
@@ -113,6 +121,7 @@ async function syncCoreUser(user: {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       location: user.location,
+      locale: normalizeAppLocale(user.locale),
       publicProfile: user.publicProfile,
       isGhostMode: user.isGhostMode,
       flames: user.flames,
@@ -136,6 +145,7 @@ async function syncCoreUser(user: {
       avatarUrl: user.avatarUrl,
       bio: user.bio,
       location: user.location,
+      locale: normalizeAppLocale(user.locale),
       publicProfile: user.publicProfile,
       isGhostMode: user.isGhostMode,
       flames: user.flames,
@@ -195,6 +205,7 @@ router.post("/register", async (req, res, next) => {
         birthDate: body.birthDate,
         phoneNumber: body.phoneNumber,
         gender: body.gender,
+        locale: body.locale,
         theme: body.theme,
         pushNotificationsEnabled: true,
         autoSaveEchoes: true,

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { YowlUser } from "@yowl/types";
 import { apiFetch } from "../lib/api";
 import { useSessionStore } from "../store/session";
+import { applyLocale, getPreferredLocale, setStoredLocale } from "../lib/locale";
 
 function applyTheme(theme: "light" | "dark") {
   document.documentElement.dataset.yowlTheme = theme;
@@ -20,6 +21,14 @@ export function ThemeBootstrap() {
   useEffect(() => {
     applyTheme(sessionUser?.theme ?? "dark");
   }, [sessionUser?.theme]);
+
+  useEffect(() => {
+    const preferredLocale = sessionUser?.locale ?? getPreferredLocale();
+    applyLocale(preferredLocale);
+    if (sessionUser?.locale) {
+      setStoredLocale(sessionUser.locale);
+    }
+  }, [sessionUser?.locale]);
 
   useEffect(() => {
     let cancelled = false;

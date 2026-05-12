@@ -6,9 +6,11 @@ import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, User
 import { APP_NAME, AUTH_ASIDES, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
 import { apiFetch } from "../../lib/api";
+import { applyLocale, getPreferredLocale, setStoredLocale } from "../../lib/locale";
 import { useSessionStore } from "../../store/session";
 import { cn } from "../../lib/utils";
-import type { YowlUser } from "@yowl/types";
+import { LocalePicker } from "../locale-picker";
+import type { AppLocale, YowlUser } from "@yowl/types";
 
 type AuthMode = "login" | "register" | "forgot";
 type Gender = "man" | "vrouw" | "geen_van_beide";
@@ -48,6 +50,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   const [gender, setGender] = useState<Gender>("geen_van_beide");
   const [registerPassword, setRegisterPassword] = useState("");
   const [resetEmail, setResetEmail] = useState("");
+  const [locale, setLocale] = useState<AppLocale>(() => getPreferredLocale());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -91,6 +94,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
               birthDate,
               phoneNumber,
               gender,
+              locale,
               password: registerPassword
             }
           : { identifier: loginEmail, password: loginPassword };
@@ -100,7 +104,16 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         body: JSON.stringify(payload)
       });
 
-      setAuth(result.user);
+      let authenticatedUser = result.user;
+      if (mode === "login" && authenticatedUser.locale !== locale) {
+        const localeResult = await apiFetch<YowlUser>("/auth/me", {
+          method: "PATCH",
+          body: JSON.stringify({ locale })
+        }).catch(() => null);
+        authenticatedUser = localeResult ?? { ...authenticatedUser, locale };
+      }
+
+      setAuth(authenticatedUser);
       router.push("/onboarding");
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Inloggen is mislukt");
@@ -117,6 +130,17 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       router.push("/");
     }
   }, [hydrated, router, sessionUser]);
+
+  useEffect(() => {
+    applyLocale(locale);
+    setStoredLocale(locale);
+  }, [locale]);
+
+  useEffect(() => {
+    if (sessionUser?.locale && sessionUser.locale !== locale) {
+      setLocale(sessionUser.locale);
+    }
+  }, [locale, sessionUser?.locale]);
 
   return (
     <div className="relative min-h-[100dvh] w-screen overflow-hidden bg-[radial-gradient(circle_at_18%_10%,rgba(192,132,252,0.35),transparent_28%),radial-gradient(circle_at_80%_16%,rgba(236,72,153,0.16),transparent_24%),radial-gradient(circle_at_50%_85%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(180deg,#140922_0%,#0c0715_56%,#09050f_100%)] text-white">
@@ -405,6 +429,15 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       </>
                     )}
                   </Button>
+
+                  <Card className="border-white/10 bg-white/[0.04] p-4">
+                    <LocalePicker
+                      value={locale}
+                      onChange={(nextLocale) => setLocale(nextLocale)}
+                      label="Taal van de app"
+                      helper="Deze taal gebruiken we op het hele account en onthouden we direct voor jou."
+                    />
+                  </Card>
 
                   <div className="flex items-center justify-center text-sm text-white/65">
                     <span>{isLogin ? "Nog nieuw bij Yowl?" : isRegister ? "Al een account?" : "Terug naar login?"}</span>

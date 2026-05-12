@@ -7,7 +7,9 @@ import { Badge, Button, Card, GlassPanel, Input, Avatar } from "@yowl/ui";
 import { cn, formatCompactNumber } from "../../lib/utils";
 import { useSessionStore } from "../../store/session";
 import { apiFetch } from "../../lib/api";
-import type { AiConversationMessage, YowlUser } from "@yowl/types";
+import { applyLocale, setStoredLocale } from "../../lib/locale";
+import { LocalePicker } from "../locale-picker";
+import { DEFAULT_APP_LOCALE, type AppLocale, type AiConversationMessage, type YowlUser } from "@yowl/types";
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
@@ -101,9 +103,9 @@ export function ProfileScreen() {
 
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
-              <Metric label="YowlScore" value={formatCompactNumber(sessionUser.yowlScore)} />
-              <Metric label="Flames" value={formatCompactNumber(sessionUser.flames)} />
-              <Metric label="Friends" value={formatCompactNumber(sessionUser.friendsCount)} />
+              <Metric label="YowlScore" value={formatCompactNumber(sessionUser.yowlScore, sessionUser.locale)} />
+              <Metric label="Flames" value={formatCompactNumber(sessionUser.flames, sessionUser.locale)} />
+              <Metric label="Friends" value={formatCompactNumber(sessionUser.friendsCount, sessionUser.locale)} />
             </div>
 
             <Card className="border-white/8 bg-white/[0.04]">
@@ -164,19 +166,42 @@ export function SettingsScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(sessionUser?.pushNotificationsEnabled ?? true);
   const [ghostMode, setGhostMode] = useState(sessionUser?.isGhostMode ?? false);
   const [autoSave, setAutoSave] = useState(sessionUser?.autoSaveEchoes ?? true);
+  const [locale, setLocale] = useState<AppLocale>(() => sessionUser?.locale ?? DEFAULT_APP_LOCALE);
 
   useEffect(() => {
     setDarkMode(sessionUser?.theme !== "light");
     setNotificationsEnabled(sessionUser?.pushNotificationsEnabled ?? true);
     setGhostMode(sessionUser?.isGhostMode ?? false);
     setAutoSave(sessionUser?.autoSaveEchoes ?? true);
-  }, [sessionUser?.autoSaveEchoes, sessionUser?.isGhostMode, sessionUser?.pushNotificationsEnabled, sessionUser?.theme]);
+    const nextLocale = sessionUser?.locale ?? DEFAULT_APP_LOCALE;
+    setLocale(nextLocale);
+    applyLocale(nextLocale);
+    setStoredLocale(nextLocale);
+  }, [
+    sessionUser?.autoSaveEchoes,
+    sessionUser?.isGhostMode,
+    sessionUser?.locale,
+    sessionUser?.pushNotificationsEnabled,
+    sessionUser?.theme
+  ]);
 
   const saveSetting = async (patch: Record<string, unknown>) => {
     if (!sessionUser) return;
     const updated = await apiFetch<YowlUser>("/auth/me", {
       method: "PATCH",
       body: JSON.stringify(patch)
+    });
+    updateUser(updated);
+  };
+
+  const updateLocale = async (nextLocale: AppLocale) => {
+    if (!sessionUser) return;
+    setLocale(nextLocale);
+    applyLocale(nextLocale);
+    setStoredLocale(nextLocale);
+    const updated = await apiFetch<YowlUser>("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify({ locale: nextLocale })
     });
     updateUser(updated);
   };
@@ -233,6 +258,16 @@ export function SettingsScreen() {
         </div>
 
         <div className="mt-5 grid gap-4 xl:grid-cols-2">
+          <Card className="border-white/8 bg-white/[0.04] p-4">
+            <LocalePicker
+              value={locale}
+              onChange={(nextLocale) => {
+                updateLocale(nextLocale).catch(() => undefined);
+              }}
+              label="Taal van de app"
+              helper="Deze taal gebruiken we voor jouw hele Yowl-account."
+            />
+          </Card>
           {switches.map((item) => {
             const Icon = item.icon;
             return (

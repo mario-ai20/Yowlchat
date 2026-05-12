@@ -1,9 +1,10 @@
 import { cn } from "@yowl/ui";
+import { DEFAULT_APP_LOCALE, type AppLocale } from "@yowl/types";
 
 export { cn };
 
-export function formatCompactNumber(value: number) {
-  return new Intl.NumberFormat("en", {
+export function formatCompactNumber(value: number, locale: AppLocale = DEFAULT_APP_LOCALE) {
+  return new Intl.NumberFormat(locale, {
     notation: "compact",
     maximumFractionDigits: 1
   }).format(value);

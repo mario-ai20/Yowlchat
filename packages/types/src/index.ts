@@ -1,5 +1,21 @@
 export type ID = string;
 
+export const APP_LOCALE_CODES = ["nl", "en", "fr", "de", "es", "it", "pt"] as const;
+
+export type AppLocale = (typeof APP_LOCALE_CODES)[number];
+
+export const APP_LOCALE_OPTIONS: Array<{ code: AppLocale; label: string }> = [
+  { code: "nl", label: "Nederlands" },
+  { code: "en", label: "English" },
+  { code: "fr", label: "Français" },
+  { code: "de", label: "Deutsch" },
+  { code: "es", label: "Español" },
+  { code: "it", label: "Italiano" },
+  { code: "pt", label: "Português" }
+] as const;
+
+export const DEFAULT_APP_LOCALE: AppLocale = "nl";
+
 export interface ProfileLink {
   label: string;
   href: string;
@@ -17,6 +33,7 @@ export interface YowlUser {
   avatarUrl?: string | null;
   bio?: string | null;
   location?: string | null;
+  locale: AppLocale;
   theme: "light" | "dark";
   publicProfile: boolean;
   flames: number;
