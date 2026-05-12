@@ -145,7 +145,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       setAuth(authenticatedUser);
       router.push("/onboarding");
     } catch (authError) {
-      setError(formatAuthError(authError, mode));
+      setError(mode === "login" ? "Account niet gevonden" : formatAuthError(authError, mode));
     } finally {
       setLoading(false);
     }
