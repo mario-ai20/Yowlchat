@@ -1,5 +1,5 @@
-import { CameraScreen } from "../../components/screens/camera";
+import { HomeScreen } from "../../components/screens/home";
 
 export default function Page() {
-  return <CameraScreen />;
+  return <HomeScreen />;
 }

@@ -19,6 +19,20 @@ const icons = {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const isHome = pathname === "/";
+
+  if (isHome) {
+    return (
+      <div className="relative min-h-screen overflow-hidden bg-[var(--yowl-app-bg)] text-[var(--yowl-text)]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute left-[-12%] top-[-10%] h-[380px] w-[380px] rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.22),transparent_70%)] blur-3xl" />
+          <div className="absolute right-[-18%] top-[18%] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.12),transparent_70%)] blur-3xl" />
+          <div className="absolute bottom-[-14%] left-[28%] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(88,126,255,0.16),transparent_70%)] blur-3xl" />
+        </div>
+        <main className="relative z-10">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--yowl-app-bg)] text-[var(--yowl-text)]">
