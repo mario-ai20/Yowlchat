@@ -1,7 +1,7 @@
 "use client";
 
-import { useId } from "react";
-import { ChevronDown, Globe2 } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { APP_LOCALE_OPTIONS, type AppLocale } from "@yowl/types";
 import { cn } from "@yowl/ui";
 
@@ -19,32 +19,85 @@ export function LocalePicker({
   className?: string;
 }) {
   const selectId = useId();
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const currentLabel = APP_LOCALE_OPTIONS.find((option) => option.code === value)?.label ?? value;
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && menuRef.current && !menuRef.current.contains(target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [value]);
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <label htmlFor={selectId} className="flex items-center gap-2 text-[13px] font-semibold text-white/72">
-        <Globe2 className="h-4 w-4 text-[#d8b4fe]" />
-        {label}
-      </label>
-      <div className="relative">
-        <select
-          id={selectId}
-          value={value}
-          onChange={(event) => onChange(event.target.value as AppLocale)}
-          className={cn(
-            "h-12 w-full appearance-none rounded-[14px] border border-white/10 bg-white/5 px-4 pr-10 text-sm font-medium text-white outline-none transition",
-            "focus:border-[#c084fc]/60 focus:ring-2 focus:ring-[#c084fc]/20"
-          )}
-        >
-          {APP_LOCALE_OPTIONS.map((option) => (
-            <option key={option.code} value={option.code} className="bg-[#1a1029] text-white">
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45" />
-      </div>
-      {helper ? <p className="text-xs text-white/45">{helper}</p> : null}
+    <div ref={menuRef} className={cn("relative inline-flex flex-col items-start gap-1.5", className)}>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.26em] text-white/46">{label}</span>
+      <button
+        id={selectId}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex appearance-none items-center gap-1 border-0 bg-transparent px-0 py-0 text-sm font-semibold text-white/86 shadow-none transition hover:text-white focus:outline-none"
+      >
+        <span>{currentLabel}</span>
+        <ChevronDown className="h-4 w-4 text-white/52" />
+      </button>
+      {helper ? <p className="text-xs text-white/42">{helper}</p> : null}
+
+      {open ? (
+        <div className="absolute bottom-full left-0 z-30 mb-2 w-[min(280px,calc(100vw-1rem))] overflow-hidden rounded-[22px] border border-white/10 bg-[rgba(18,10,26,0.98)] p-1 shadow-[0_24px_70px_rgba(0,0,0,0.42)] backdrop-blur-2xl">
+          <div className="px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/36">Taal kiezen</p>
+          </div>
+          <div role="listbox" aria-label={label} className="max-h-72 overflow-auto">
+            {APP_LOCALE_OPTIONS.map((option) => {
+              const active = option.code === value;
+              return (
+                <button
+                  key={option.code}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => {
+                    onChange(option.code);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-[16px] px-3 py-3 text-left text-sm transition",
+                    active ? "bg-white/12 text-white" : "text-white/72 hover:bg-white/6 hover:text-white"
+                  )}
+                >
+                  <span>{option.label}</span>
+                  {active ? <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d8b4fe]">Actief</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

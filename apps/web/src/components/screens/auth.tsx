@@ -493,15 +493,13 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         </main>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center px-4">
-          <div className="pointer-events-auto w-full max-w-[320px] rounded-[18px] border border-white/10 bg-black/35 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-            <LocalePicker
-              value={locale}
-              onChange={(nextLocale) => setLocale(nextLocale)}
-              label={copy.languageLabel}
-              helper={copy.languageHelper}
-              className="space-y-1"
-            />
-          </div>
+          <LocalePicker
+            value={locale}
+            onChange={(nextLocale) => setLocale(nextLocale)}
+            label={copy.languageLabel}
+            helper=""
+            className="pointer-events-auto items-center"
+          />
         </div>
 
         <footer className="pb-3 pt-2">
