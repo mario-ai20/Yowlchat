@@ -541,9 +541,6 @@ export function HomeScreen() {
             }}
             onReload={reloadApp}
           />
-          <div className="hidden h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/50 sm:flex">
-            <Sparkles className="h-5 w-5" />
-          </div>
         </div>
 
         <div className="grid w-full flex-1 gap-3 xl:grid-cols-[330px_minmax(0,1fr)_360px]">
@@ -661,114 +658,109 @@ export function HomeScreen() {
             transition={{ type: "spring", stiffness: 170, damping: 20 }}
             className="flex min-h-[calc(100dvh-1.5rem)] flex-col gap-3"
           >
-            <GlassPanel className="flex flex-1 flex-col p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.28em] text-white/38">YowlMoji</p>
-                  <h2 className="mt-1 text-2xl font-semibold tracking-tight">Je poppetje</h2>
-                </div>
-                <Badge>Camera links</Badge>
-              </div>
-
-              <div className="mt-6 flex items-center justify-center">
+            <GlassPanel className="flex flex-1 flex-col gap-4 p-4">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_132px]">
                 <div className="rounded-[42px] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.22),rgba(255,255,255,0.04))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.3)]">
-                  <Avatar name={sessionUser.displayName} src={sessionUser.avatarUrl} className="h-40 w-40 text-3xl" />
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-[28px] border border-white/8 bg-white/[0.04] p-4 text-center">
-                <p className="text-lg font-semibold">{sessionUser.displayName}</p>
-                <p className="mt-1 text-sm text-white/50">@{sessionUser.username}</p>
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  <Badge>{formatCompactNumber(sessionUser.flames)} Flames</Badge>
-                  <Badge>{formatCompactNumber(sessionUser.yowlScore)} YowlScore</Badge>
-                  <Badge>{sessionUser.isGhostMode ? "Ghost mode" : "Visible"}</Badge>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-3">
-                <div className="rounded-[24px] border border-white/8 bg-white/[0.05] p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs uppercase tracking-[0.28em] text-white/38">Live context</p>
-                    <Badge>{permissionLabel(camera.permission)}</Badge>
-                  </div>
-                  <div className="mt-3 space-y-2 text-sm text-white/62">
-                    <p>{firstFriend ? `Je kunt meteen naar ${firstFriend.displayName} sturen.` : "Je vriendenlijst laadt zodra er echte data binnenkomt."}</p>
-                    <p>{firstFriend ? `${firstFriend.friendsCount} vrienden in hun netwerk.` : "Gebruik de camera om direct een Yowl te maken."}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-[24px] border border-white/8 bg-white/[0.05] p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.28em] text-white/38">{BRAND_TERMS.Stories}</p>
-                      <p className="mt-1 text-sm text-white/58">Verhalen van je vrienden</p>
+                      <p className="text-xs uppercase tracking-[0.28em] text-white/38">YowlMoji</p>
+                      <h2 className="mt-1 text-2xl font-semibold tracking-tight">Je poppetje</h2>
                     </div>
-                    <Badge>{howls.length ? `${howls.length} live` : "0 live"}</Badge>
+                    <Badge>Camera links</Badge>
                   </div>
 
-                  <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-                    {howlsLoading ? (
-                      Array.from({ length: 4 }).map((_, index) => (
-                        <div key={index} className="flex w-20 shrink-0 flex-col items-center gap-2">
-                          <div className="h-16 w-16 rounded-full border border-white/10 bg-white/5" />
-                          <div className="h-2 w-12 rounded-full bg-white/6" />
-                        </div>
-                      ))
-                    ) : howls.length ? (
-                      howls.slice(0, 5).map((story) => <HowlBubble key={story.id} story={story} />)
-                    ) : (
-                      <div className="rounded-[20px] border border-dashed border-white/10 bg-white/5 px-4 py-4 text-sm text-white/58">
-                        Nog geen Howls gesynchroniseerd.
-                      </div>
-                    )}
+                  <div className="mt-6 flex items-center justify-center">
+                    <Avatar name={sessionUser.displayName} src={sessionUser.avatarUrl} className="h-40 w-40 text-3xl" />
+                  </div>
+
+                  <div className="mt-5 text-center">
+                    <p className="text-lg font-semibold">{sessionUser.displayName}</p>
+                    <p className="mt-1 text-sm text-white/50">@{sessionUser.username}</p>
+                    <div className="mt-4 flex flex-wrap justify-center gap-2">
+                      <Badge>{formatCompactNumber(sessionUser.flames)} Flames</Badge>
+                      <Badge>{formatCompactNumber(sessionUser.yowlScore)} YowlScore</Badge>
+                      <Badge>{sessionUser.isGhostMode ? "Ghost mode" : "Visible"}</Badge>
+                    </div>
                   </div>
                 </div>
 
-                <div className="rounded-[24px] border border-white/8 bg-white/[0.05] p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.28em] text-white/38">{BRAND_TERMS.Spotlight}</p>
-                      <p className="mt-1 text-sm text-white/58">Uitgelichte momenten en trending clips</p>
-                    </div>
-                    <Sparkles className="h-5 w-5 text-[var(--yowl-primary)]" />
-                  </div>
-
-                  <div className="mt-4 overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),rgba(255,255,255,0.04)),linear-gradient(135deg,rgba(17,17,24,0.94),rgba(32,32,40,0.84))] p-4">
+                <div className="flex flex-col gap-3">
+                  <div className="rounded-[26px] border border-white/8 bg-white/[0.05] p-3">
                     <div className="flex items-center justify-between">
-                      <Badge>Moonlight</Badge>
-                      <Badge>{featuredHowl ? "Featured Howl" : "Spotlight"}</Badge>
-                    </div>
-                    <div className="mt-4 flex items-end justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-2xl font-semibold tracking-tight">
-                          {featuredHowl?.caption ?? "Moonlight spotlight"}
-                        </p>
-                        <p className="mt-2 text-sm text-white/68">
-                          {featuredHowl
-                            ? `Van ${featuredHowl.author?.displayName ?? "een vriend"} in ${timeAgo(featuredHowl.expiresAt)}.`
-                            : "Hier verschijnt straks de uitgelichte Moonlight-feed met de beste clips."}
-                        </p>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-white/38">{BRAND_TERMS.Stories}</p>
+                        <p className="text-sm text-white/58">Vriendenverhalen</p>
                       </div>
-                      <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-white/12 bg-black/25">
-                        <Video className="h-7 w-7 text-white/90" />
-                      </div>
+                      <Badge>{howls.length ? `${howls.length}` : "0"}</Badge>
                     </div>
-                    <div className="mt-4 flex items-center gap-2">
-                      <Button variant="glass" size="sm" className="flex-1 justify-between">
-                        <span className="inline-flex items-center gap-2">
-                          <Sparkles className="h-4 w-4" />
-                          Moonlight
-                        </span>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                      <Button variant="glass" size="sm" className="flex-1 justify-between">
-                        <span className="inline-flex items-center gap-2">
-                          <Video className="h-4 w-4" />
-                          Open
-                        </span>
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                    <div className="mt-3 flex flex-col gap-3">
+                      {howlsLoading ? (
+                        Array.from({ length: 3 }).map((_, index) => (
+                          <div key={index} className="flex items-center gap-3 rounded-[22px] border border-white/8 bg-white/[0.04] px-3 py-3">
+                            <div className="h-12 w-12 rounded-full border border-white/10 bg-white/5" />
+                            <div className="flex-1">
+                              <div className="h-3 w-20 rounded-full bg-white/6" />
+                              <div className="mt-2 h-2 w-16 rounded-full bg-white/6" />
+                            </div>
+                          </div>
+                        ))
+                      ) : howls.length ? (
+                        howls.slice(0, 3).map((story) => (
+                          <button key={story.id} type="button" className="flex items-center gap-3 rounded-[22px] border border-white/8 bg-white/[0.04] px-3 py-3 text-left transition hover:bg-white/[0.07]">
+                            <Avatar name={story.author?.displayName ?? "Yowl"} src={story.author?.avatarUrl} className="h-12 w-12" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold">{story.author?.displayName ?? "Yowl"}</p>
+                              <p className="truncate text-xs text-white/50">{story.caption ?? "Nieuwe Howl"}</p>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="rounded-[20px] border border-dashed border-white/10 bg-white/5 px-4 py-4 text-sm text-white/58">
+                          Nog geen Howls gesynchroniseerd.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[26px] border border-white/8 bg-white/[0.05] p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.28em] text-white/38">{BRAND_TERMS.Spotlight}</p>
+                        <p className="text-sm text-white/58">Uitgelichte clips</p>
+                      </div>
+                      <Badge>{featuredHowl ? "Moonlight" : "Spotlight"}</Badge>
+                    </div>
+
+                    <div className="mt-3 rounded-[26px] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),rgba(255,255,255,0.04)),linear-gradient(135deg,rgba(17,17,24,0.94),rgba(32,32,40,0.84))] p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-lg font-semibold tracking-tight">{featuredHowl?.caption ?? "Moonlight spotlight"}</p>
+                          <p className="mt-1 text-sm text-white/68">
+                            {featuredHowl
+                              ? `Van ${featuredHowl.author?.displayName ?? "een vriend"}`
+                              : "Uitgelichte Moonlight-feed met de beste clips."}
+                          </p>
+                        </div>
+                        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full border border-white/12 bg-black/25">
+                          <Video className="h-6 w-6 text-white/90" />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex items-center gap-2">
+                        <Button variant="glass" size="sm" className="flex-1 justify-between">
+                          <span className="inline-flex items-center gap-2">
+                            <Sparkles className="h-4 w-4" />
+                            Moonlight
+                          </span>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button variant="glass" size="sm" className="flex-1 justify-between">
+                          <span className="inline-flex items-center gap-2">
+                            <Video className="h-4 w-4" />
+                            Open
+                          </span>
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
