@@ -4,12 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "prebuild": "prisma generate --schema prisma/schema.prisma",
+    "prebuild": "node ../../node_modules/prisma/build/index.js generate --schema prisma/schema.prisma",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
-    "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "prisma:generate": "node ../../node_modules/prisma/build/index.js generate --schema prisma/schema.prisma",
+    "prisma:migrate": "node ../../node_modules/prisma/build/index.js migrate dev --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
