@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { env } from "./env.js";
-import { normalizeDatabaseUrl } from "./database-url.js";
+import { isConfiguredDatabaseUrl, normalizeDatabaseUrl } from "./database-url.js";
+import { memoryPrisma } from "./memory-db.js";
 
 type DbClient = PrismaClient;
 
@@ -30,7 +31,7 @@ function createClient(kind: "accounts" | "core") {
   const url = resolveUrl(kind);
 
   if (!url) {
-    throw new Error(`${kind} database URL is not configured`);
+    return memoryPrisma as unknown as PrismaClient;
   }
 
   const globalKey = kind === "accounts" ? "__yowlAccountsPrisma" : "__yowlCorePrisma";
@@ -51,38 +52,7 @@ function createClient(kind: "accounts" | "core") {
   return client;
 }
 
-function createUnavailableClient(kind: "accounts" | "core") {
-  let proxy: PrismaClient;
-
-  const handler: ProxyHandler<PrismaClient> = {
-    get(_target, prop) {
-      if (prop === "then") return undefined;
-      return proxy as never;
-    },
-    apply() {
-      throw new Error(`${kind} database URL is not configured`);
-    },
-    has() {
-      return false;
-    },
-    ownKeys() {
-      return [];
-    },
-    getOwnPropertyDescriptor() {
-      return undefined;
-    }
-  };
-
-  proxy = new Proxy(function noop() {} as never, handler) as PrismaClient;
-  return proxy;
-}
-
 function createLazyClient(kind: "accounts" | "core") {
-  const url = resolveUrl(kind);
-  if (!url) {
-    return createUnavailableClient(kind);
-  }
-
   return new Proxy({} as PrismaClient, {
     get(_target, prop, receiver) {
       const client = createClient(kind);
@@ -113,7 +83,11 @@ export const accountsDb: DbClient = createLazyClient("accounts");
 
 export const coreDb: DbClient = createLazyClient("core");
 
-export const hasAccountsDatabase = Boolean(resolveUrl("accounts"));
-export const hasCoreDatabase = Boolean(resolveUrl("core"));
+export const hasAccountsDatabase = isConfiguredDatabaseUrl(
+  env.SUPABASE_ACCOUNTS_DATABASE_URL ?? env.SUPABASE_DATABASE_URL ?? env.ACCOUNTS_DATABASE_URL ?? env.DATABASE_URL
+);
+export const hasCoreDatabase = isConfiguredDatabaseUrl(
+  env.SUPABASE_CORE_DATABASE_URL ?? env.CORE_DATABASE_URL ?? env.POSTGRES_DATABASE_URL ?? env.DATABASE_URL
+);
 
 export const prisma = accountsDb;

@@ -7,10 +7,15 @@ const fallbackUrl = "postgresql://prisma:prisma@127.0.0.1:5432/yowlchat?schema=p
 const require = createRequire(import.meta.url);
 const prismaCli = require.resolve("prisma/build/index.js");
 const postgresProtocolRe = /^postgres(?:ql)?:\/\//i;
+const placeholderSegmentsRe = /(PASTE_|CHANGE_ME|REPLACE_ME|YOUR_|_HERE\b|TODO|EXAMPLE|PLACEHOLDER)/i;
 
 function normalizeDatabaseUrl(url) {
   const value = url?.trim();
   if (!value) {
+    return null;
+  }
+
+  if (placeholderSegmentsRe.test(value)) {
     return null;
   }
 
