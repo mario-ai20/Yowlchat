@@ -12,7 +12,7 @@ async function getExpressApp() {
     // The server build is emitted as JS during the web prebuild step.
     // Next's type checker does not know this file at authoring time.
     // @ts-ignore - resolved at runtime after the server prebuild.
-    expressAppPromise = import("../../../../../apps/server/dist/src/app.js").then((module) => module.createApp());
+    expressAppPromise = import("../../../server-dist/src/app.js").then((module) => module.createApp());
   }
 
   return expressAppPromise;
