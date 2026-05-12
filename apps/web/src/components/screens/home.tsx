@@ -22,16 +22,18 @@ import {
   Sparkles,
   Settings,
   SwitchCamera,
+  Video,
   Volume2,
   VolumeX,
   UserPlus,
   Zap
 } from "lucide-react";
+import { BRAND_TERMS } from "@yowl/config";
 import { useCamera } from "../../hooks/use-camera";
 import { apiFetch } from "../../lib/api";
-import { cn, formatCompactNumber } from "../../lib/utils";
+import { cn, formatCompactNumber, timeAgo } from "../../lib/utils";
 import { useSessionStore } from "../../store/session";
-import type { YowlUser } from "@yowl/types";
+import type { HowlStory, YowlUser } from "@yowl/types";
 import { Avatar, Badge, Button, GlassPanel, Input } from "@yowl/ui";
 
 type FriendsPayload = {
@@ -40,6 +42,8 @@ type FriendsPayload = {
   outgoingRequests: Array<{ id: string }>;
   suggestions: YowlUser[];
 };
+
+type HowlStoryWithAuthor = HowlStory & { author?: YowlUser };
 
 type CameraState = ReturnType<typeof useCamera>;
 
@@ -197,6 +201,17 @@ function FriendRow({ friend }: { friend: YowlUser }) {
         <MessageCircle className="h-4 w-4" />
       </button>
     </div>
+  );
+}
+
+function HowlBubble({ story }: { story: HowlStoryWithAuthor }) {
+  return (
+    <button type="button" className="flex w-20 shrink-0 flex-col items-center gap-2 text-center">
+      <span className="grid h-16 w-16 place-items-center rounded-full border-2 border-[var(--yowl-primary)] p-[2px]">
+        <Avatar name={story.author?.displayName ?? "Yowl"} src={story.author?.avatarUrl} className="h-full w-full border-none bg-black" />
+      </span>
+      <span className="w-full truncate text-xs font-medium text-white/72">{story.author?.displayName?.split(" ")[0] ?? "Yowl"}</span>
+    </button>
   );
 }
 
@@ -363,7 +378,9 @@ export function HomeScreen() {
   const camera = useCamera();
   const [query, setQuery] = useState("");
   const [payload, setPayload] = useState<FriendsPayload | null>(null);
+  const [howls, setHowls] = useState<HowlStoryWithAuthor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [howlsLoading, setHowlsLoading] = useState(false);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
 
   useEffect(() => {
@@ -381,6 +398,7 @@ export function HomeScreen() {
   useEffect(() => {
     if (!hydrated || !sessionUser) {
       setPayload(null);
+      setHowls([]);
       return;
     }
 
@@ -403,6 +421,31 @@ export function HomeScreen() {
     };
   }, [hydrated, sessionUser]);
 
+  useEffect(() => {
+    if (!hydrated || !sessionUser) {
+      setHowls([]);
+      return;
+    }
+
+    let cancelled = false;
+    setHowlsLoading(true);
+
+    apiFetch<HowlStoryWithAuthor[]>("/howls")
+      .then((data) => {
+        if (!cancelled) setHowls(data);
+      })
+      .catch(() => {
+        if (!cancelled) setHowls([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHowlsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, sessionUser]);
+
   const friends = payload?.friends ?? [];
   const visibleFriends = friends.filter((friend) => {
     const haystack = `${friend.displayName} ${friend.username}`.toLowerCase();
@@ -411,6 +454,7 @@ export function HomeScreen() {
 
   const onlineFriends = visibleFriends.filter((friend) => friend.isOnline).slice(0, 3);
   const firstFriend = visibleFriends[0] ?? friends[0] ?? null;
+  const featuredHowl = howls[0] ?? null;
 
   const toggleTheme = async () => {
     if (!sessionUser) return;
@@ -657,26 +701,75 @@ export function HomeScreen() {
                 <div className="rounded-[24px] border border-white/8 bg-white/[0.05] p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.28em] text-white/38">Quick actions</p>
-                      <p className="mt-1 text-sm text-white/58">Snelle routes vanop je YowlMoji</p>
+                      <p className="text-xs uppercase tracking-[0.28em] text-white/38">{BRAND_TERMS.Stories}</p>
+                      <p className="mt-1 text-sm text-white/58">Verhalen van je vrienden</p>
+                    </div>
+                    <Badge>{howls.length ? `${howls.length} live` : "0 live"}</Badge>
+                  </div>
+
+                  <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+                    {howlsLoading ? (
+                      Array.from({ length: 4 }).map((_, index) => (
+                        <div key={index} className="flex w-20 shrink-0 flex-col items-center gap-2">
+                          <div className="h-16 w-16 rounded-full border border-white/10 bg-white/5" />
+                          <div className="h-2 w-12 rounded-full bg-white/6" />
+                        </div>
+                      ))
+                    ) : howls.length ? (
+                      howls.slice(0, 5).map((story) => <HowlBubble key={story.id} story={story} />)
+                    ) : (
+                      <div className="rounded-[20px] border border-dashed border-white/10 bg-white/5 px-4 py-4 text-sm text-white/58">
+                        Nog geen Howls gesynchroniseerd.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-[24px] border border-white/8 bg-white/[0.05] p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.28em] text-white/38">{BRAND_TERMS.Spotlight}</p>
+                      <p className="mt-1 text-sm text-white/58">Uitgelichte momenten en trending clips</p>
                     </div>
                     <Sparkles className="h-5 w-5 text-[var(--yowl-primary)]" />
                   </div>
-                  <div className="mt-4 grid gap-2">
-                    <Button variant="glass" className="justify-between">
-                      <span className="inline-flex items-center gap-2">
-                        <Camera className="h-4 w-4" />
-                        Camera
-                      </span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button variant="glass" className="justify-between">
-                      <span className="inline-flex items-center gap-2">
-                        <MessageCircle className="h-4 w-4" />
-                        Chat
-                      </span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
+
+                  <div className="mt-4 overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.18),rgba(255,255,255,0.04)),linear-gradient(135deg,rgba(17,17,24,0.94),rgba(32,32,40,0.84))] p-4">
+                    <div className="flex items-center justify-between">
+                      <Badge>Moonlight</Badge>
+                      <Badge>{featuredHowl ? "Featured Howl" : "Spotlight"}</Badge>
+                    </div>
+                    <div className="mt-4 flex items-end justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-2xl font-semibold tracking-tight">
+                          {featuredHowl?.caption ?? "Moonlight spotlight"}
+                        </p>
+                        <p className="mt-2 text-sm text-white/68">
+                          {featuredHowl
+                            ? `Van ${featuredHowl.author?.displayName ?? "een vriend"} in ${timeAgo(featuredHowl.expiresAt)}.`
+                            : "Hier verschijnt straks de uitgelichte Moonlight-feed met de beste clips."}
+                        </p>
+                      </div>
+                      <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-white/12 bg-black/25">
+                        <Video className="h-7 w-7 text-white/90" />
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <Button variant="glass" size="sm" className="flex-1 justify-between">
+                        <span className="inline-flex items-center gap-2">
+                          <Sparkles className="h-4 w-4" />
+                          Moonlight
+                        </span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button variant="glass" size="sm" className="flex-1 justify-between">
+                        <span className="inline-flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Open
+                        </span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
