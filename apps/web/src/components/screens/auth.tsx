@@ -144,14 +144,12 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
               <div className="max-w-lg space-y-5">
                 <Badge className="border-black/10 bg-white/80 text-slate-700">Camera-first social platform</Badge>
                 <h1 className="text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">{APP_NAME}</h1>
-                <p className="text-lg leading-8 text-slate-600">
-                  Snel, premium en gebouwd voor Howls, chats, YowlMap, Echoes en Yowl AI.
-                </p>
+                <p className="text-lg leading-8 text-slate-600">Snel, premium en gebouwd voor Howls, chats, YowlMap en Echoes.</p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
                     { icon: Camera, label: "Howls" },
                     { icon: MessageCircleMore, label: "Realtime chat" },
-                    { icon: Sparkles, label: "Yowl AI" }
+                    { icon: Sparkles, label: "Moonlight" }
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
@@ -379,7 +377,6 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
               <span>Moonlight</span>
               <span>YowlMap</span>
               <span>Echoes</span>
-              <span>Yowl AI</span>
             </div>
             <div className="flex flex-wrap gap-3">
               <span>Privacy</span>

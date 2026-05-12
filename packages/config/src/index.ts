@@ -13,8 +13,7 @@ export const BRAND_TERMS = {
   Memories: "Echoes",
   Snapscore: "YowlScore",
   Streaks: "Flames",
-  Discover: "Explore",
-  "My AI": "Yowl AI"
+  Discover: "Explore"
 } as const;
 
 export const NAV_ITEMS = [
@@ -30,7 +29,7 @@ export const AUTH_ASIDES = [
   "Fast disappearing media",
   "Realtime chat with read receipts",
   "Story rings, streak flames and map presence",
-  "AI suggestions and premium motion"
+  "Premium motion and discovery"
 ] as const;
 
 export const CAMERA_FILTERS = [
