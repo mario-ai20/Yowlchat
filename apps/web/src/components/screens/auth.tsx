@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Camera, KeyRound, Mail, MessageCircleMore, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
+import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import { APP_NAME, AUTH_ASIDES, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
 import { apiFetch } from "../../lib/api";
@@ -119,14 +119,14 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   }, [hydrated, router, sessionUser]);
 
   return (
-    <div className="relative min-h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_18%_10%,rgba(192,132,252,0.35),transparent_28%),radial-gradient(circle_at_80%_16%,rgba(236,72,153,0.16),transparent_24%),radial-gradient(circle_at_50%_85%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(180deg,#140922_0%,#0c0715_56%,#09050f_100%)] text-white">
+    <div className="relative min-h-[100dvh] w-screen overflow-hidden bg-[radial-gradient(circle_at_18%_10%,rgba(192,132,252,0.35),transparent_28%),radial-gradient(circle_at_80%_16%,rgba(236,72,153,0.16),transparent_24%),radial-gradient(circle_at_50%_85%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(180deg,#140922_0%,#0c0715_56%,#09050f_100%)] text-white">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-[-10%] top-[-12%] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(196,101,255,0.36),transparent_68%)] blur-3xl" />
         <div className="absolute right-[-12%] top-[18%] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.3),transparent_68%)] blur-3xl" />
         <div className="absolute bottom-[-16%] left-[24%] h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.16),transparent_70%)] blur-3xl" />
       </div>
 
-      <div className="relative flex min-h-[100dvh] w-full flex-col px-4 py-4 sm:px-6 lg:px-8">
+      <div className="relative flex min-h-[100dvh] w-screen flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between py-2">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-lg font-black text-white shadow-[0_16px_35px_rgba(168,85,247,0.5)]">
@@ -167,8 +167,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     { icon: Camera, label: BRAND_TERMS.Stories, description: "Echte verhalen in een opvallende ring." },
                     { icon: Sparkles, label: BRAND_TERMS.Spotlight, description: "Korte highlights en featured momenten." },
                     {
-                      icon: MessageCircleMore,
                       label: BRAND_TERMS["Snap Map"],
+                      icon: MapPin,
                       description: "Zie waar je vrienden actief zijn."
                     }
                   ].map((item) => {
