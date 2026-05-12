@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --yowl-primary: #a855f7;
+  --yowl-app-bg: #050507;
+  --yowl-shell-bg: rgba(6, 6, 10, 0.72);
+  --yowl-bg: #050507;
+  --yowl-surface: rgba(255, 255, 255, 0.06);
+  --yowl-surface-strong: rgba(255, 255, 255, 0.1);
+  --yowl-border: rgba(255, 255, 255, 0.1);
+  --yowl-text: #f7f7f7;
+  --yowl-muted: rgba(255, 255, 255, 0.62);
+  --yowl-glow: rgba(168, 85, 247, 0.32);
+  color-scheme: dark;
+}
+
+[data-yowl-theme="light"] {
+  --yowl-app-bg: #f5f6fa;
+  --yowl-shell-bg: rgba(255, 255, 255, 0.82);
+  --yowl-bg: #f5f6fa;
+  --yowl-surface: rgba(255, 255, 255, 0.9);
+  --yowl-surface-strong: rgba(255, 255, 255, 0.96);
+  --yowl-border: rgba(15, 23, 42, 0.1);
+  --yowl-text: #0f172a;
+  --yowl-muted: rgba(15, 23, 42, 0.62);
+  --yowl-glow: rgba(168, 85, 247, 0.28);
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  background:
+    radial-gradient(circle at top, rgba(168, 85, 247, 0.18), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(108, 126, 255, 0.12), transparent 28%),
+    var(--yowl-bg);
+}
+
+html[data-yowl-theme="light"] {
+  background:
+    radial-gradient(circle at top, rgba(168, 85, 247, 0.22), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(108, 126, 255, 0.12), transparent 26%),
+    var(--yowl-bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--yowl-bg);
+  color: var(--yowl-text);
+  font-family: var(--font-body), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(168, 85, 247, 0.35);
+  color: white;
+}
+
+html[data-yowl-theme="light"] ::selection {
+  background: rgba(168, 85, 247, 0.3);
+  color: #0f172a;
+}
+
+.noise {
+  position: relative;
+}
+
+.noise::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.18;
+  mix-blend-mode: soft-light;
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.premium-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.premium-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.premium-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-divider {
+  border-color: rgba(255, 255, 255, 0.08);
+}

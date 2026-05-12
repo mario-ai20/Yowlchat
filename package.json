@@ -1,0 +1,66 @@
+{
+  "name": "yowlchat",
+  "version": "1.0.0",
+  "description": "YowlChat desktop and web social app",
+  "author": "Mattiz Hoornaert",
+  "private": true,
+  "main": "apps/desktop/main.cjs",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,server -c yellow,cyan \"npm run dev --workspace @yowl/web\" \"npm run dev --workspace @yowl/server\"",
+    "desktop:dev": "electron .",
+    "desktop:dist": "electron-builder --win nsis",
+    "build": "npm run build --workspace @yowl/server && npm run build --workspace @yowl/web",
+    "typecheck": "npm run typecheck --workspace @yowl/server && npm run typecheck --workspace @yowl/web",
+    "prisma:generate": "npm run prisma:generate --workspace @yowl/server",
+    "prisma:migrate": "npm run prisma:migrate --workspace @yowl/server",
+    "db:seed": "npm run db:seed --workspace @yowl/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "electron": "^37.2.1",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.9.2"
+  },
+  "build": {
+    "appId": "com.yowlchat.desktop",
+    "productName": "YowlChat",
+    "asar": true,
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "apps/desktop/**/*",
+      "apps/server/dist/**/*",
+      "apps/web/.next/**/*",
+      "apps/web/public/**/*",
+      "packages/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "apps/desktop/main.cjs"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "YowlChat-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

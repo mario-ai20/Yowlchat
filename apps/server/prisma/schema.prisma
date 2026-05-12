@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  username        String           @unique
+  firstName       String?
+  lastName        String?
+  birthDate       DateTime?
+  phoneNumber     String?
+  gender          String?
+  displayName     String
+  passwordHash    String
+  avatarUrl       String?
+  bio             String?
+  location        String?
+  publicProfile   Boolean          @default(true)
+  isGhostMode     Boolean          @default(false)
+  flames          Int              @default(0)
+  yowlScore       Int              @default(0)
+  lastSeenAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sessions        Session[]
+  sentMessages    Message[]        @relation("SentMessages")
+  messageReceipts MessageReceipt[]
+  chatParticipants ChatParticipant[]
+  stories         Story[]
+  memories        Memory[]
+  streaksFrom     Streak[]         @relation("StreakFrom")
+  streaksTo       Streak[]         @relation("StreakTo")
+  notifications   Notification[]
+  aiConversations AiConversation[]
+  friendshipsSent Friendship[]     @relation("FriendshipRequester")
+  friendshipsRecv Friendship[]     @relation("FriendshipAddressee")
+  reactions       Reaction[]
+  storyViews      StoryView[]
+  locationPings   LocationPing[]
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  revokedAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Chat {
+  id             String           @id @default(cuid())
+  title          String
+  isGroup        Boolean          @default(false)
+  isArchived     Boolean          @default(false)
+  pinnedAt       DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  participants   ChatParticipant[]
+  messages       Message[]
+}
+
+model ChatParticipant {
+  id            String   @id @default(cuid())
+  chatId        String
+  userId        String
+  unreadCount   Int      @default(0)
+  lastReadAt    DateTime?
+  isTyping      Boolean  @default(false)
+  isMuted       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  chat          Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id              String           @id @default(cuid())
+  chatId          String
+  senderId        String
+  content         String
+  mediaUrl        String?
+  mediaType       String?
+  ephemeralSeconds Int?
+  replyToId       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  chat            Chat             @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender          User             @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo         Message?         @relation("MessageReply", fields: [replyToId], references: [id])
+  replies         Message[]        @relation("MessageReply")
+  receipts        MessageReceipt[]
+  reactions       Reaction[]
+
+  @@index([chatId, createdAt])
+}
+
+model MessageReceipt {
+  id          String   @id @default(cuid())
+  messageId   String
+  userId      String
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+model Story {
+  id          String       @id @default(cuid())
+  authorId    String
+  mediaUrl    String
+  mediaType   String
+  caption     String?
+  expiresAt   DateTime
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views       StoryView[]
+  reactions   Reaction[]
+
+  @@index([authorId, expiresAt])
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  viewedAt  DateTime @default(now())
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId])
+}
+
+model Friendship {
+  id            String   @id @default(cuid())
+  requesterId   String
+  addresseeId   String
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  requester     User     @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee     User     @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+}
+
+model Memory {
+  id         String   @id @default(cuid())
+  userId     String
+  title      String
+  mediaUrl   String
+  folder     String
+  favorite   Boolean  @default(false)
+  isPrivate  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Streak {
+  id           String   @id @default(cuid())
+  fromUserId   String
+  toUserId     String
+  flameCount   Int      @default(0)
+  lastUpdatedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  fromUser     User     @relation("StreakFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser       User     @relation("StreakTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  userId    String
+  messageId String?
+  storyId   String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  story     Story?   @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  seen      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AiConversation {
+  id          String       @id @default(cuid())
+  userId      String
+  title       String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    AiMessage[]
+}
+
+model AiMessage {
+  id            String   @id @default(cuid())
+  conversationId String
+  role          String
+  content       String
+  createdAt     DateTime @default(now())
+  conversation  AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model LocationPing {
+  id        String   @id @default(cuid())
+  userId    String
+  lat       Float
+  lng       Float
+  ghostMode Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
