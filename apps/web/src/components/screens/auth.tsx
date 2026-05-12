@@ -126,7 +126,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         <div className="absolute bottom-[-16%] left-[24%] h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.16),transparent_70%)] blur-3xl" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[100dvh] max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+      <div className="relative flex min-h-[100dvh] w-full flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between py-2">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-lg font-black text-white shadow-[0_16px_35px_rgba(168,85,247,0.5)]">
@@ -145,7 +145,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         </header>
 
         <main className="flex flex-1 items-center justify-center py-8">
-          <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_480px] lg:items-center">
+          <div className="grid w-full gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
             <div className="hidden lg:block">
               <div className="max-w-xl space-y-6">
                 <Badge className="border-white/10 bg-white/8 text-white/75 shadow-[0_10px_30px_rgba(0,0,0,0.14)] backdrop-blur-xl">
@@ -212,7 +212,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
               </div>
             </div>
 
-            <div className="mx-auto w-full max-w-[520px]">
+            <div className="w-full">
               <Card className="overflow-hidden border-white/10 bg-[rgba(15,8,28,0.78)] p-0 shadow-[0_35px_140px_rgba(61,18,104,0.55)] backdrop-blur-2xl">
                 <div className="border-b border-white/10 px-6 pt-6">
                   <div className="mx-auto flex max-w-[420px] items-center rounded-full border border-white/10 bg-white/7 p-1 backdrop-blur-xl">
