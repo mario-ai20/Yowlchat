@@ -13,3 +13,5 @@ apps/server/prisma/dev.db-journal
 apps/web/.next
 apps/server/dist
 apps/web/server-dist
+
+.vercel

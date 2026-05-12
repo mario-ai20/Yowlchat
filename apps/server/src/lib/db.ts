@@ -53,7 +53,38 @@ function createClient(kind: "accounts" | "core") {
   return client;
 }
 
+function createUnavailableClient(kind: "accounts" | "core") {
+  let proxy: PrismaClient;
+
+  const handler: ProxyHandler<PrismaClient> = {
+    get(_target, prop) {
+      if (prop === "then") return undefined;
+      return proxy as never;
+    },
+    apply() {
+      throw new Error(`${kind} database URL is not configured`);
+    },
+    has() {
+      return false;
+    },
+    ownKeys() {
+      return [];
+    },
+    getOwnPropertyDescriptor() {
+      return undefined;
+    }
+  };
+
+  proxy = new Proxy(function noop() {} as never, handler) as PrismaClient;
+  return proxy;
+}
+
 function createLazyClient(kind: "accounts" | "core") {
+  const url = resolveUrl(kind);
+  if (!url) {
+    return createUnavailableClient(kind);
+  }
+
   return new Proxy({} as PrismaClient, {
     get(_target, prop, receiver) {
       const client = createClient(kind);
