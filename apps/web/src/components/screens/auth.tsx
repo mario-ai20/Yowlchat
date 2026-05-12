@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type InputHTMLAttributes } from "react";
+import { useEffect, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import { APP_NAME, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
 import { apiFetch } from "../../lib/api";
+import { getUiCopy } from "../../lib/i18n";
 import { applyLocale, getPreferredLocale, setStoredLocale } from "../../lib/locale";
 import { useSessionStore } from "../../store/session";
 import { cn } from "../../lib/utils";
@@ -83,22 +84,9 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   const [locale, setLocale] = useState<AppLocale>(() => getPreferredLocale());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const title = useMemo(() => {
-    if (mode === "register") return "Maak een Yowl-account";
-    if (mode === "forgot") return "Wachtwoord vergeten";
-    return "Inloggen bij Yowl";
-  }, [mode]);
-
-  const subtitle = useMemo(() => {
-    if (mode === "register") {
-      return "Maak je profiel aan, zet je YowlMoji klaar en stap meteen de app in.";
-    }
-    if (mode === "forgot") {
-      return "Vraag veilig een herstellink aan met je e-mailadres.";
-    }
-    return "Gebruik je e-mailadres of gebruikersnaam om verder te gaan.";
-  }, [mode]);
+  const copy = getUiCopy(locale).auth;
+  const title = mode === "register" ? copy.registerTitle : mode === "forgot" ? copy.forgotTitle : copy.loginTitle;
+  const subtitle = mode === "register" ? copy.registerSubtitle : mode === "forgot" ? copy.forgotSubtitle : copy.loginSubtitle;
 
   const submit = async () => {
     setLoading(true);
@@ -154,26 +142,26 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
   const isLogin = mode === "login";
   const isRegister = mode === "register";
-  const introBadge = "Alles op één plek";
-  const introLine = "Chats, Howls, YowlMoji en YowlMap in één app. Simpel, snel en herkenbaar.";
+  const introBadge = copy.introBadge;
+  const introLine = copy.introLine;
   const featureCards = [
     {
       icon: Camera,
       label: BRAND_TERMS.Stories,
-      description: "Foto's en video's van je vrienden."
+      description: copy.feature1Desc
     },
     {
       icon: Sparkles,
       label: BRAND_TERMS.Spotlight,
-      description: "Korte clips en highlights in één feed."
+      description: copy.feature2Desc
     },
     {
       label: BRAND_TERMS["Snap Map"],
       icon: MapPin,
-      description: "Zie waar je vrienden nu zijn."
+      description: copy.feature3Desc
     }
   ] as const;
-  const pillTags = ["Je taal onthouden", "Privacy netjes geregeld", "Camera en chat dichtbij"];
+  const pillTags = [copy.pill1, copy.pill2, copy.pill3];
   const footerFeatureLinks = [
     { label: BRAND_TERMS.Stories, href: "/howls" },
     { label: BRAND_TERMS.Spotlight, href: "/moonlight" },
@@ -181,10 +169,10 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
     { label: BRAND_TERMS.Memories, href: "/echoes" }
   ] as const;
   const footerHelpLinks = [
-    { label: "Privacy", href: "/settings" },
-    { label: "Veiligheid", href: "/settings" },
+    { label: copy.footerPrivacy, href: "/settings" },
+    { label: copy.footerSecurity, href: "/settings" },
     {
-      label: "Support",
+      label: copy.footerSupport,
       href: "mailto:yowl.maffia@gmail.com?subject=YowlChat%20support&body=Hallo%20Yowl,%0A%0AIk%20heb%20hulp%20nodig%20met:%0A"
     }
   ] as const;
@@ -222,7 +210,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             </div>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/48">{APP_NAME}</p>
-              <p className="text-sm text-white/62">Echte mensen. Echte gesprekken. Eigen glow.</p>
+              <p className="text-sm text-white/62">{copy.headerTagline}</p>
             </div>
           </div>
 
@@ -242,7 +230,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
                 <div className="space-y-4">
                   <h1 className="max-w-lg text-5xl font-black tracking-tight text-white sm:text-6xl">
-                    Welkom bij {APP_NAME}
+                    {copy.heroTitle}
                   </h1>
                   <p className="max-w-xl text-lg leading-8 text-white/68">
                     {introLine}
@@ -263,7 +251,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-white">{item.label}</p>
-                            <p className="text-xs text-white/50">In Yowl</p>
+                            <p className="text-xs text-white/50">Yowl</p>
                           </div>
                         </div>
                         <p className="mt-3 text-sm leading-6 text-white/64">{item.description}</p>
@@ -278,8 +266,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       Y
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-white">Je profiel, je camera, je feed</p>
-                      <p className="text-sm text-white/58">Alles wat je nodig hebt, zonder extra gedoe.</p>
+                      <p className="text-sm font-semibold text-white">{copy.panelTitle}</p>
+                      <p className="text-sm text-white/58">{copy.panelSubtitle}</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/60">
@@ -307,7 +295,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                           : "text-white/60 hover:text-white"
                       )}
                     >
-                      Inloggen
+                      {copy.loginTab}
                     </button>
                     <button
                       type="button"
@@ -319,7 +307,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                           : "text-white/60 hover:text-white"
                       )}
                     >
-                      Aanmelden
+                      {copy.registerTab}
                     </button>
                   </div>
 
@@ -342,54 +330,54 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                   {isRegister ? (
                     <div className="grid gap-4">
                       <AuthField
-                        label="E-mailadres"
+                        label={copy.emailLabel}
                         type="email"
                         value={registerEmail}
                         onChange={(event) => setRegisterEmail(event.target.value)}
-                        placeholder="jij@voorbeeld.be"
+                        placeholder={copy.emailPlaceholder}
                         autoComplete="email"
                       />
                       <div className="grid gap-4 sm:grid-cols-2">
                         <AuthField
-                          label="Voornaam"
+                          label={copy.firstNameLabel}
                           value={firstName}
                           onChange={(event) => setFirstName(event.target.value)}
-                          placeholder="Voornaam"
+                          placeholder={copy.firstNamePlaceholder}
                           autoComplete="given-name"
                         />
                         <AuthField
-                          label="Achternaam"
+                          label={copy.lastNameLabel}
                           value={lastName}
                           onChange={(event) => setLastName(event.target.value)}
-                          placeholder="Achternaam"
+                          placeholder={copy.lastNamePlaceholder}
                           autoComplete="family-name"
                         />
                       </div>
                       <div className="grid gap-4 sm:grid-cols-2">
                         <AuthField
-                          label="Geboortedatum"
+                          label={copy.birthDateLabel}
                           type="date"
                           value={birthDate}
                           onChange={(event) => setBirthDate(event.target.value)}
                           autoComplete="bday"
                         />
                         <AuthField
-                          label="Telefoonnummer"
+                          label={copy.phoneLabel}
                           type="tel"
                           value={phoneNumber}
                           onChange={(event) => setPhoneNumber(event.target.value)}
-                          placeholder="+32 ..."
+                          placeholder={copy.phonePlaceholder}
                           autoComplete="tel"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-[13px] font-semibold text-white/72">Gender</label>
+                        <label className="block text-[13px] font-semibold text-white/72">{copy.genderLabel}</label>
                         <div className="grid grid-cols-3 gap-2">
                           {[
-                            { label: "Man", value: "man" as Gender },
-                            { label: "Vrouw", value: "vrouw" as Gender },
-                            { label: "Geen van beide", value: "geen_van_beide" as Gender }
+                            { label: copy.genderMan, value: "man" as Gender },
+                            { label: copy.genderWoman, value: "vrouw" as Gender },
+                            { label: copy.genderOther, value: "geen_van_beide" as Gender }
                           ].map((item) => (
                             <button
                               key={item.value}
@@ -409,30 +397,30 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       </div>
 
                       <AuthField
-                        label="Wachtwoord"
+                        label={copy.passwordLabel}
                         type="password"
                         value={registerPassword}
                         onChange={(event) => setRegisterPassword(event.target.value)}
-                        placeholder="Minstens 8 tekens"
+                        placeholder={copy.passwordPlaceholder}
                         autoComplete="new-password"
                       />
                     </div>
                   ) : isLogin ? (
                     <div className="grid gap-4">
                       <AuthField
-                        label="E-mailadres of gebruikersnaam"
+                        label={`${copy.emailLabel} of gebruikersnaam`}
                         type="text"
                         value={loginEmail}
                         onChange={(event) => setLoginEmail(event.target.value)}
-                        placeholder="jij@voorbeeld.be of je gebruikersnaam"
+                        placeholder={copy.loginIdentifierPlaceholder}
                         autoComplete="username"
                       />
                       <AuthField
-                        label="Wachtwoord"
+                        label={copy.passwordLabel}
                         type="password"
                         value={loginPassword}
                         onChange={(event) => setLoginPassword(event.target.value)}
-                        placeholder="Je wachtwoord"
+                        placeholder={copy.passwordPlaceholder}
                         autoComplete="current-password"
                       />
                       <button
@@ -440,17 +428,17 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                         onClick={() => router.push("/forgot-password")}
                         className="text-left text-sm font-semibold text-white/60 transition hover:text-white"
                       >
-                        Wachtwoord vergeten?
+                        {copy.forgotPassword}
                       </button>
                     </div>
                   ) : (
                     <div className="grid gap-4">
                       <AuthField
-                        label="E-mailadres"
+                        label={copy.emailLabel}
                         type="email"
                         value={resetEmail}
                         onChange={(event) => setResetEmail(event.target.value)}
-                        placeholder="jij@voorbeeld.be"
+                        placeholder={copy.emailPlaceholder}
                         autoComplete="email"
                       />
                     </div>
@@ -468,42 +456,33 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     disabled={loading}
                   >
                     {loading ? (
-                      "Even laden..."
+                      copy.loading
                     ) : isRegister ? (
                       <>
                         <UserPlus className="h-4 w-4" />
-                        Account aanmaken
+                        {copy.submitRegister}
                       </>
                     ) : mode === "forgot" ? (
                       <>
                         <Mail className="h-4 w-4" />
-                        Herstelmail sturen
+                        {copy.submitForgot}
                       </>
                     ) : (
                       <>
                         <KeyRound className="h-4 w-4" />
-                        Volgende
+                        {copy.submitLogin}
                       </>
                     )}
                   </Button>
 
-                  <Card className="border-white/10 bg-white/[0.04] p-4">
-                    <LocalePicker
-                      value={locale}
-                      onChange={(nextLocale) => setLocale(nextLocale)}
-                      label="Taal van de app"
-                      helper="Deze taal gebruiken we op het hele account en onthouden we direct voor jou."
-                    />
-                  </Card>
-
                   <div className="flex items-center justify-center text-sm text-white/65">
-                    <span>{isLogin ? "Nog nieuw bij Yowl?" : isRegister ? "Al een account?" : "Terug naar login?"}</span>
+                    <span>{isLogin ? copy.noAccountPrompt : isRegister ? copy.accountExistsPrompt : copy.backToLoginPrompt}</span>
                     <button
                       type="button"
                       className="ml-2 inline-flex items-center gap-1 font-semibold text-white underline decoration-[#d8b4fe] decoration-2 underline-offset-4"
                       onClick={() => router.push(isLogin ? "/register" : "/login")}
                     >
-                      {isLogin ? "Aanmelden" : "Inloggen"}
+                      {isLogin ? copy.noAccountAction : copy.backToLoginAction}
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
@@ -512,6 +491,18 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             </div>
           </div>
         </main>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center px-4">
+          <div className="pointer-events-auto w-full max-w-[320px] rounded-[18px] border border-white/10 bg-black/35 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+            <LocalePicker
+              value={locale}
+              onChange={(nextLocale) => setLocale(nextLocale)}
+              label={copy.languageLabel}
+              helper={copy.languageHelper}
+              className="space-y-1"
+            />
+          </div>
+        </div>
 
         <footer className="pb-3 pt-2">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 text-xs text-white/48">

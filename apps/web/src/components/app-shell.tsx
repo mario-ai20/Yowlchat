@@ -5,8 +5,11 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { Camera, MessageCircle, Settings, Sparkles, User, Video } from "lucide-react";
-import { APP_NAME, NAV_ITEMS } from "@yowl/config";
+import { APP_NAME } from "@yowl/config";
 import { cn, GlassPanel } from "@yowl/ui";
+import { getPreferredLocale } from "../lib/locale";
+import { getUiCopy } from "../lib/i18n";
+import { useSessionStore } from "../store/session";
 
 const icons = {
   camera: Camera,
@@ -19,7 +22,18 @@ const icons = {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const sessionUser = useSessionStore((state) => state.user);
+  const locale = sessionUser?.locale ?? getPreferredLocale();
+  const copy = getUiCopy(locale).shell;
   const isHome = pathname === "/";
+  const navItems = [
+    { href: "/", label: copy.nav.camera, icon: "camera" },
+    { href: "/chat", label: copy.nav.chat, icon: "message-circle" },
+    { href: "/howls", label: copy.nav.howls, icon: "sparkles" },
+    { href: "/moonlight", label: copy.nav.moonlight, icon: "video" },
+    { href: "/profile", label: copy.nav.profile, icon: "user" },
+    { href: "/settings", label: copy.nav.settings, icon: "settings" }
+  ] as const;
 
   if (isHome) {
     return (
@@ -45,12 +59,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-[color:var(--yowl-border)] bg-[color:var(--yowl-shell-bg)] backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-3 sm:px-6">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.32em] text-[var(--yowl-muted)]">Premium social</p>
+            <p className="text-[11px] uppercase tracking-[0.32em] text-[var(--yowl-muted)]">{copy.premiumSocial}</p>
             <h1 className="text-xl font-semibold tracking-tight">{APP_NAME}</h1>
           </div>
           <div className="flex items-center gap-2">
             <span className="rounded-full border border-[color:var(--yowl-border)] bg-[color:var(--yowl-surface)] px-3 py-1 text-xs text-[var(--yowl-muted)]">
-              Live
+              {copy.live}
             </span>
             <span className="rounded-full bg-[var(--yowl-primary)] px-3 py-1 text-xs font-semibold text-black shadow-glow">
               Yowl
@@ -72,9 +86,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <section className="min-h-[calc(100vh-176px)]">{children}</section>
             <aside className="hidden lg:block">
               <GlassPanel className="sticky top-24 p-5">
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--yowl-muted)]">Navigation</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--yowl-muted)]">{copy.navigationLabel}</p>
                 <nav className="mt-4 space-y-2">
-                  {NAV_ITEMS.map((item) => {
+                  {navItems.map((item) => {
                     const Icon = icons[item.icon];
                     const active = pathname === item.href;
                     return (
@@ -95,11 +109,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                   })}
                 </nav>
                 <div className="mt-6 rounded-[24px] border border-[color:var(--yowl-border)] bg-gradient-to-br from-[color:var(--yowl-surface)] to-transparent p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--yowl-muted)]">Current mode</p>
-                  <p className="mt-2 text-lg font-semibold">Camera-first, always.</p>
-                  <p className="mt-2 text-sm text-[var(--yowl-muted)]">
-                    Smooth, dark, premium UI with original Yowl branding and motion.
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-[var(--yowl-muted)]">{copy.currentMode}</p>
+                  <p className="mt-2 text-lg font-semibold">{copy.cameraFirst}</p>
+                  <p className="mt-2 text-sm text-[var(--yowl-muted)]">{copy.currentModeBody}</p>
                 </div>
               </GlassPanel>
             </aside>
@@ -109,7 +121,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--yowl-border)] bg-[color:var(--yowl-shell-bg)] backdrop-blur-2xl lg:hidden">
         <div className="mx-auto grid max-w-[720px] grid-cols-6 gap-1 px-2 py-3 sm:px-3">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = icons[item.icon];
             const active = pathname === item.href;
             return (
