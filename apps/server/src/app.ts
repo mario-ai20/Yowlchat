@@ -15,6 +15,7 @@ import aiRoutes from "./routes/ai.js";
 import { authLimiter, aiLimiter } from "./middleware/rate-limit.js";
 import { HttpError } from "./lib/errors.js";
 import type { NextFunction, Request, Response } from "express";
+import { ZodError } from "zod";
 
 const helmet = helmetPkg as unknown as () => import("express").RequestHandler;
 
@@ -51,8 +52,12 @@ export function createApp() {
       return res.status(error.status).json({ error: error.message });
     }
 
+    if (error instanceof ZodError) {
+      return res.status(400).json({ error: "Ongeldige invoer" });
+    }
+
     if (error instanceof Error) {
-      return res.status(500).json({ error: error.message });
+      return res.status(500).json({ error: "Unexpected server error" });
     }
 
     return res.status(500).json({ error: "Unexpected server error" });

@@ -35,6 +35,35 @@ function AuthField({
   );
 }
 
+function formatAuthError(error: unknown, mode: AuthMode) {
+  const fallback = mode === "forgot" ? "Controleer het e-mailadres en probeer opnieuw." : "Controleer je invoer en probeer opnieuw.";
+
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+
+  const message = error.message.trim();
+  const lower = message.toLowerCase();
+
+  if (!message || message.startsWith("{") || lower.includes("too_small") || lower.includes("invalid input") || lower.includes("zod")) {
+    return fallback;
+  }
+
+  if (lower.includes("account niet gevonden")) {
+    return "Account niet gevonden.";
+  }
+
+  if (lower.includes("invalid credentials")) {
+    return "Gebruikersnaam of wachtwoord klopt niet.";
+  }
+
+  if (lower.includes("email or username already in use")) {
+    return "Dit account bestaat al.";
+  }
+
+  return fallback;
+}
+
 export function AuthScreen({ mode }: { mode: AuthMode }) {
   const router = useRouter();
   const hydrated = useSessionStore((state) => state.hydrated);
@@ -116,7 +145,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       setAuth(authenticatedUser);
       router.push("/onboarding");
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : "Inloggen is mislukt");
+      setError(formatAuthError(authError, mode));
     } finally {
       setLoading(false);
     }
