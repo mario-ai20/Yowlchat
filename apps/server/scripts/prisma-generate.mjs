@@ -1,9 +1,11 @@
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const cwd = fileURLToPath(new URL("..", import.meta.url));
-const prismaCli = fileURLToPath(new URL("../../../node_modules/prisma/build/index.js", import.meta.url));
 const fallbackUrl = "postgresql://prisma:prisma@127.0.0.1:5432/yowlchat?schema=public";
+const require = createRequire(import.meta.url);
+const prismaCli = require.resolve("prisma/build/index.js");
 
 const accountsUrl = process.env.SUPABASE_ACCOUNTS_DATABASE_URL?.trim();
 const defaultUrl = process.env.DATABASE_URL?.trim();
