@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { accountsDb as prisma, coreDb as corePrisma } from "../lib/db.js";
 import { HttpError } from "../lib/errors.js";
-import { clearAuthCookies, setAuthCookies } from "../lib/cookies.js";
+import { clearAuthCookies, getOrCreateDeviceId, setAuthCookies } from "../lib/cookies.js";
 import { authenticateRequest, type AuthenticatedRequest } from "../middleware/auth.js";
 import { getClientIp } from "../lib/http.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt.js";
@@ -205,9 +205,23 @@ router.post("/register", async (req, res, next) => {
       }
     });
 
-    const session = await prisma.session.create({
-      data: {
+    const deviceId = getOrCreateDeviceId(req, res);
+    const session = await prisma.session.upsert({
+      where: {
+        userId_deviceId: {
+          userId: user.id,
+          deviceId
+        }
+      },
+      update: {
+        refreshTokenHash: "",
+        userAgent: req.get("user-agent"),
+        ipAddress: getClientIp(req),
+        revokedAt: null
+      },
+      create: {
         userId: user.id,
+        deviceId,
         refreshTokenHash: "",
         userAgent: req.get("user-agent"),
         ipAddress: getClientIp(req)
@@ -245,9 +259,23 @@ router.post("/login", async (req, res, next) => {
       throw new HttpError(401, "Invalid credentials");
     }
 
-    const session = await prisma.session.create({
-      data: {
+    const deviceId = getOrCreateDeviceId(req, res);
+    const session = await prisma.session.upsert({
+      where: {
+        userId_deviceId: {
+          userId: user.id,
+          deviceId
+        }
+      },
+      update: {
+        refreshTokenHash: "",
+        userAgent: req.get("user-agent"),
+        ipAddress: getClientIp(req),
+        revokedAt: null
+      },
+      create: {
         userId: user.id,
+        deviceId,
         refreshTokenHash: "",
         userAgent: req.get("user-agent"),
         ipAddress: getClientIp(req)
@@ -270,12 +298,13 @@ router.post("/login", async (req, res, next) => {
 router.post("/refresh", async (req, res, next) => {
   try {
     const body = refreshSchema.parse(req.body);
+    const deviceId = getOrCreateDeviceId(req, res);
     const payload = verifyRefreshToken(body.refreshToken);
     const session = await prisma.session.findUnique({
       where: { id: payload.sessionId }
     });
 
-    if (!session || session.revokedAt) {
+    if (!session || session.revokedAt || session.deviceId !== deviceId) {
       throw new HttpError(401, "Session revoked");
     }
 

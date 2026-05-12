@@ -55,13 +55,18 @@ for each row execute function public.set_updated_at();
 create table if not exists public."Session" (
   "id" text primary key,
   "userId" text not null references public."User" ("id") on delete cascade,
+  "deviceId" text not null,
   "refreshTokenHash" text not null,
   "userAgent" text,
   "ipAddress" text,
   "revokedAt" timestamptz,
   "createdAt" timestamptz not null default now(),
-  "updatedAt" timestamptz not null default now()
+  "updatedAt" timestamptz not null default now(),
+  unique ("userId", "deviceId")
 );
+
+alter table if exists public."Session"
+  add column if not exists "deviceId" text;
 
 drop trigger if exists set_session_updated_at on public."Session";
 create trigger set_session_updated_at

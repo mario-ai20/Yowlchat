@@ -1,9 +1,10 @@
 import type { Server as HttpServer } from "node:http";
+import bcrypt from "bcryptjs";
 import { Server } from "socket.io";
-import { verifyAccessToken } from "../lib/jwt.js";
+import { verifyAccessToken, verifyRefreshToken } from "../lib/jwt.js";
 import { markOffline, markOnline, touchPresence } from "./presence.js";
-import { coreDb as prisma } from "../lib/db.js";
-import { AUTH_ACCESS_COOKIE, readCookie } from "../lib/cookies.js";
+import { accountsDb as authPrisma, coreDb as prisma } from "../lib/db.js";
+import { AUTH_ACCESS_COOKIE, AUTH_DEVICE_COOKIE, AUTH_REFRESH_COOKIE, readCookie } from "../lib/cookies.js";
 
 async function isChatParticipant(chatId: string, userId: string) {
   return Boolean(
@@ -22,12 +23,31 @@ export function createSocketServer(httpServer: HttpServer) {
   });
 
   io.use(async (socket, next) => {
-    const token =
-      socket.handshake.auth?.token ??
-      readCookie(socket.request.headers.cookie, AUTH_ACCESS_COOKIE);
-    if (!token) return next();
-
     try {
+      const token =
+        socket.handshake.auth?.token ??
+        readCookie(socket.request.headers.cookie, AUTH_ACCESS_COOKIE);
+
+      if (!token) {
+        const refreshToken = readCookie(socket.request.headers.cookie, AUTH_REFRESH_COOKIE);
+        const deviceId = readCookie(socket.request.headers.cookie, AUTH_DEVICE_COOKIE);
+        if (!refreshToken || !deviceId) return next();
+
+        const payload = verifyRefreshToken(refreshToken);
+        const session = await authPrisma.session.findUnique({
+          where: { id: payload.sessionId }
+        });
+
+        if (!session || session.revokedAt || session.deviceId !== deviceId) return next();
+
+        const matches = await bcrypt.compare(refreshToken, session.refreshTokenHash);
+        if (!matches) return next();
+
+        socket.data.userId = payload.sub;
+        socket.data.sessionId = payload.sessionId;
+        return next();
+      }
+
       const payload = verifyAccessToken(token);
       socket.data.userId = payload.sub;
       socket.data.sessionId = payload.sessionId;
