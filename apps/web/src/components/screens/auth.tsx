@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
@@ -11,6 +10,7 @@ import { applyLocale, getPreferredLocale, setStoredLocale } from "../../lib/loca
 import { useSessionStore } from "../../store/session";
 import { cn } from "../../lib/utils";
 import { LocalePicker } from "../locale-picker";
+import { BrandLogo } from "../brand-logo";
 import type { AppLocale, YowlUser } from "@yowl/types";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -233,15 +233,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
       <div className="relative flex min-h-[100dvh] w-screen flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-lg font-black text-white shadow-[0_16px_35px_rgba(168,85,247,0.5)]">
-              Y
-            </div>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/48">{APP_NAME}</p>
-              <p className="text-sm text-white/62">{copy.headerTagline}</p>
-            </div>
-          </div>
+          <BrandLogo variant="icon" size={44} label={APP_NAME} caption={copy.headerTagline} priority />
 
           <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/8 px-3 py-2 text-sm text-white/70 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:flex">
             <ShieldCheck className="h-4 w-4 text-[#d8b4fe]" />
@@ -268,15 +260,22 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
                 <div className="grid gap-3 sm:grid-cols-3">
                   {featureCards.map((item) => {
-                    const Icon = item.icon;
                     return (
                       <div
                         key={item.label}
                         className="rounded-[26px] border border-white/10 bg-white/7 p-4 shadow-[0_12px_35px_rgba(0,0,0,0.18)] backdrop-blur-xl"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[linear-gradient(135deg,rgba(216,180,254,0.22),rgba(124,58,237,0.18))] text-[#f5e9ff]">
-                            <Icon className="h-5 w-5" />
+                          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[linear-gradient(135deg,rgba(216,180,254,0.22),rgba(124,58,237,0.18))]">
+                            <img
+                              src="/brand/icon-192.png"
+                              alt={`${APP_NAME} logo`}
+                              width={28}
+                              height={28}
+                              loading="eager"
+                              decoding="async"
+                              className="h-7 w-7 object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.42)]"
+                            />
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-white">{item.label}</p>
@@ -291,8 +290,16 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
                 <div className="rounded-[30px] border border-white/10 bg-white/7 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
                   <div className="flex items-center gap-3">
-                    <div className="grid h-12 w-12 place-items-center rounded-[18px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-white shadow-[0_18px_30px_rgba(168,85,247,0.35)]">
-                      Y
+                    <div className="grid h-12 w-12 place-items-center rounded-[18px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] shadow-[0_18px_30px_rgba(168,85,247,0.35)]">
+                      <img
+                        src="/brand/icon-512.png"
+                        alt={`${APP_NAME} logo`}
+                        width={32}
+                        height={32}
+                        loading="eager"
+                        decoding="async"
+                        className="h-8 w-8 object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.42)]"
+                      />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-white">{copy.panelTitle}</p>
@@ -340,8 +347,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     </button>
                   </div>
 
-                  <div className="mx-auto mt-6 grid h-16 w-16 place-items-center rounded-[24px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-3xl font-black text-white shadow-[0_20px_50px_rgba(168,85,247,0.45)]">
-                    Y
+                  <div className="mx-auto mt-6 w-fit">
+                    <BrandLogo variant="full" size={112} hideText priority className="justify-center" />
                   </div>
                   <div className="mx-auto max-w-md pb-5 pt-5 text-center">
                     <h2 className="text-3xl font-black tracking-tight text-white">{title}</h2>

@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Camera, MessageCircle, Settings, Sparkles, User, Video } from "lucide-react";
 import { APP_NAME } from "@yowl/config";
 import { cn, GlassPanel } from "@yowl/ui";
+import { BrandLogo } from "./brand-logo";
 import { getPreferredLocale } from "../lib/locale";
 import { getUiCopy } from "../lib/i18n";
 import { useSessionStore } from "../store/session";
@@ -58,10 +59,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <header className="sticky top-0 z-40 border-b border-[color:var(--yowl-border)] bg-[color:var(--yowl-shell-bg)] backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-3 sm:px-6">
-          <div>
-            <p className="text-[11px] uppercase tracking-[0.32em] text-[var(--yowl-muted)]">{copy.premiumSocial}</p>
-            <h1 className="text-xl font-semibold tracking-tight">{APP_NAME}</h1>
-          </div>
+          <BrandLogo variant="icon" size={38} label={APP_NAME} caption={copy.premiumSocial} priority />
           <div className="flex items-center gap-2">
             <span className="rounded-full border border-[color:var(--yowl-border)] bg-[color:var(--yowl-surface)] px-3 py-1 text-xs text-[var(--yowl-muted)]">
               {copy.live}
