@@ -1,15 +1,37 @@
-import type { Chat, Message, Story, User, Memory, Friendship, Notification, AiConversation, LocationPing } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 
-type MessageWithRelations = Message & {
-  reactions?: Array<{ emoji: string; userId: string }>;
-  receipts?: Array<{
-    userId: string;
-    deliveredAt: Date | null;
-    readAt: Date | null;
-  }>;
+type UserRecord = Prisma.UserGetPayload<{}>;
+type ChatRecord = Prisma.ChatGetPayload<{}>;
+type MessageRecord = Prisma.MessageGetPayload<{}>;
+type StoryRecord = Prisma.StoryGetPayload<{}>;
+type MemoryRecord = Prisma.MemoryGetPayload<{}>;
+type FriendshipRecord = Prisma.FriendshipGetPayload<{}>;
+type NotificationRecord = Prisma.NotificationGetPayload<{}>;
+type AiConversationRecord = Prisma.AiConversationGetPayload<{}>;
+type LocationPingRecord = Pick<Prisma.LocationPingGetPayload<{}>, "lat" | "lng" | "createdAt">;
+
+type MessageReaction = Pick<Prisma.ReactionGetPayload<{}>, "emoji" | "userId">;
+
+type MessageReceipt = Pick<Prisma.MessageReceiptGetPayload<{}>, "userId" | "deliveredAt" | "readAt">;
+
+type MessageWithRelations = Pick<
+  MessageRecord,
+  "id" | "chatId" | "senderId" | "content" | "mediaUrl" | "mediaType" | "ephemeralSeconds" | "createdAt" | "updatedAt" | "replyToId"
+> & {
+  reactions?: MessageReaction[];
+  receipts?: MessageReceipt[];
 };
 
-export function serializeUser(user: User, extras: Partial<{ friendsCount: number; isOnline: boolean }> = {}) {
+type ChatParticipantWithUser = {
+  user: Pick<UserRecord, "id">;
+};
+
+type ChatWithRelations = Pick<ChatRecord, "id" | "title" | "pinnedAt"> & {
+  participants?: ChatParticipantWithUser[];
+  messages?: MessageWithRelations[];
+};
+
+export function serializeUser(user: UserRecord, extras: Partial<{ friendsCount: number; isOnline: boolean }> = {}) {
   return {
     id: user.id,
     username: user.username,
@@ -22,11 +44,11 @@ export function serializeUser(user: User, extras: Partial<{ friendsCount: number
     avatarUrl: user.avatarUrl,
     bio: user.bio,
     location: user.location,
-    theme: (user as User & { theme?: string }).theme === "light" ? "light" : "dark",
+    theme: user.theme === "light" ? "light" : "dark",
     publicProfile: user.publicProfile,
     isGhostMode: user.isGhostMode,
-    pushNotificationsEnabled: (user as User & { pushNotificationsEnabled?: boolean }).pushNotificationsEnabled ?? true,
-    autoSaveEchoes: (user as User & { autoSaveEchoes?: boolean }).autoSaveEchoes ?? true,
+    pushNotificationsEnabled: user.pushNotificationsEnabled ?? true,
+    autoSaveEchoes: user.autoSaveEchoes ?? true,
     flames: user.flames,
     yowlScore: user.yowlScore,
     friendsCount: extras.friendsCount ?? 0,
@@ -36,6 +58,9 @@ export function serializeUser(user: User, extras: Partial<{ friendsCount: number
 }
 
 export function serializeMessage(message: MessageWithRelations) {
+  const reactions = message.reactions ?? [];
+  const receipts = message.receipts ?? [];
+
   return {
     id: message.id,
     chatId: message.chatId,
@@ -47,27 +72,27 @@ export function serializeMessage(message: MessageWithRelations) {
     createdAt: message.createdAt.toISOString(),
     updatedAt: message.updatedAt.toISOString(),
     replyToId: message.replyToId,
-    reactions: message.reactions?.map((reaction) => ({
+    reactions: reactions.map((reaction: MessageReaction) => ({
       emoji: reaction.emoji,
       userId: reaction.userId
-    })) ?? [],
-    receipts:
-      message.receipts?.reduce<Record<string, { deliveredAt: string | null; readAt: string | null }>>(
-        (accumulator, receipt) => {
-          accumulator[receipt.userId] = {
-            deliveredAt: receipt.deliveredAt?.toISOString() ?? null,
-            readAt: receipt.readAt?.toISOString() ?? null
-          };
-          return accumulator;
-        },
-        {}
-      ) ?? {}
+    })),
+    receipts: receipts.reduce<Record<string, { deliveredAt: string | null; readAt: string | null }>>(
+      (accumulator, receipt: MessageReceipt) => {
+        accumulator[receipt.userId] = {
+          deliveredAt: receipt.deliveredAt?.toISOString() ?? null,
+          readAt: receipt.readAt?.toISOString() ?? null
+        };
+        return accumulator;
+      },
+      {}
+    )
   };
 }
 
-export function serializeChat(chat: Chat & { participants?: Array<{ user: User }>; messages?: MessageWithRelations[] }) {
-  const participantIds = chat.participants?.map((participant) => participant.user.id) ?? [];
+export function serializeChat(chat: ChatWithRelations) {
+  const participantIds = chat.participants?.map((participant: ChatParticipantWithUser) => participant.user.id) ?? [];
   const lastMessage = chat.messages?.[0] ? serializeMessage(chat.messages[0]) : null;
+
   return {
     id: chat.id,
     title: chat.title,
@@ -81,7 +106,7 @@ export function serializeChat(chat: Chat & { participants?: Array<{ user: User }
   };
 }
 
-export function serializeStory(story: Story) {
+export function serializeStory(story: StoryRecord) {
   return {
     id: story.id,
     authorId: story.authorId,
@@ -94,7 +119,7 @@ export function serializeStory(story: Story) {
   };
 }
 
-export function serializeMemory(memory: Memory) {
+export function serializeMemory(memory: MemoryRecord) {
   return {
     id: memory.id,
     title: memory.title,
@@ -106,7 +131,7 @@ export function serializeMemory(memory: Memory) {
   };
 }
 
-export function serializeFriendship(friendship: Friendship) {
+export function serializeFriendship(friendship: FriendshipRecord) {
   return {
     id: friendship.id,
     requesterId: friendship.requesterId,
@@ -116,7 +141,7 @@ export function serializeFriendship(friendship: Friendship) {
   };
 }
 
-export function serializeNotification(notification: Notification) {
+export function serializeNotification(notification: NotificationRecord) {
   return {
     id: notification.id,
     type: notification.type,
@@ -127,7 +152,7 @@ export function serializeNotification(notification: Notification) {
   };
 }
 
-export function serializeAiConversation(conversation: AiConversation) {
+export function serializeAiConversation(conversation: AiConversationRecord) {
   return {
     id: conversation.id,
     title: conversation.title,
@@ -136,7 +161,7 @@ export function serializeAiConversation(conversation: AiConversation) {
   };
 }
 
-export function serializeLocationPing(ping: LocationPing, user: User) {
+export function serializeLocationPing(ping: LocationPingRecord, user: UserRecord) {
   return {
     user: serializeUser(user),
     lat: ping.lat,

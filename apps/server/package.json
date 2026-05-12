@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "prebuild": "npm run prisma:generate",
     "build": "tsc -p tsconfig.json",
+    "pretypecheck": "npm run prisma:generate",
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prisma:generate": "npm exec -- prisma generate --schema prisma/schema.prisma",
