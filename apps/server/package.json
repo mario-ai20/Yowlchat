@@ -4,12 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "prebuild": "node ../../node_modules/prisma/build/index.js generate --schema prisma/schema.prisma",
+    "prebuild": "npm exec -- prisma generate --schema prisma/schema.prisma",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prisma:generate": "node ../../node_modules/prisma/build/index.js generate --schema prisma/schema.prisma",
-    "prisma:migrate": "node ../../node_modules/prisma/build/index.js migrate dev --schema prisma/schema.prisma",
+    "prisma:generate": "npm exec -- prisma generate --schema prisma/schema.prisma",
+    "prisma:migrate": "npm exec -- prisma migrate dev --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
@@ -22,6 +22,7 @@
     "express-rate-limit": "^8.1.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "prisma": "6.15.0",
     "socket.io": "^4.8.1",
     "zod": "^4.1.5"
   },
@@ -32,7 +33,6 @@
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.1",
-    "prisma": "^6.15.0",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
