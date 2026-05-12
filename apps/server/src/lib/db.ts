@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { env } from "./env.js";
+import { normalizeDatabaseUrl } from "./database-url.js";
 
 type DbClient = PrismaClient;
 
@@ -12,19 +13,16 @@ declare global {
 
 function resolveUrl(kind: "accounts" | "core") {
   if (kind === "accounts") {
-    return (
+    return normalizeDatabaseUrl(
       env.SUPABASE_ACCOUNTS_DATABASE_URL ??
-      env.SUPABASE_DATABASE_URL ??
-      env.ACCOUNTS_DATABASE_URL ??
-      env.DATABASE_URL
+        env.SUPABASE_DATABASE_URL ??
+        env.ACCOUNTS_DATABASE_URL ??
+        env.DATABASE_URL
     );
   }
 
-  return (
-    env.SUPABASE_CORE_DATABASE_URL ??
-    env.CORE_DATABASE_URL ??
-    env.POSTGRES_DATABASE_URL ??
-    env.DATABASE_URL
+  return normalizeDatabaseUrl(
+    env.SUPABASE_CORE_DATABASE_URL ?? env.CORE_DATABASE_URL ?? env.POSTGRES_DATABASE_URL ?? env.DATABASE_URL
   );
 }
 

@@ -251,7 +251,7 @@ router.post("/login", async (req, res, next) => {
     });
 
     if (!user) {
-      throw new HttpError(401, "Invalid credentials");
+      throw new HttpError(404, "Account niet gevonden");
     }
 
     const valid = await bcrypt.compare(body.password, user.passwordHash);

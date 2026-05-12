@@ -6,9 +6,27 @@ const cwd = fileURLToPath(new URL("..", import.meta.url));
 const fallbackUrl = "postgresql://prisma:prisma@127.0.0.1:5432/yowlchat?schema=public";
 const require = createRequire(import.meta.url);
 const prismaCli = require.resolve("prisma/build/index.js");
+const postgresProtocolRe = /^postgres(?:ql)?:\/\//i;
 
-const accountsUrl = process.env.SUPABASE_ACCOUNTS_DATABASE_URL?.trim();
-const defaultUrl = process.env.DATABASE_URL?.trim();
+function normalizeDatabaseUrl(url) {
+  const value = url?.trim();
+  if (!value) {
+    return null;
+  }
+
+  if (postgresProtocolRe.test(value)) {
+    return value;
+  }
+
+  if (value.includes("://")) {
+    return value;
+  }
+
+  return `postgresql://${value}`;
+}
+
+const accountsUrl = normalizeDatabaseUrl(process.env.SUPABASE_ACCOUNTS_DATABASE_URL);
+const defaultUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
 const resolvedUrl = accountsUrl || defaultUrl || fallbackUrl;
 
 process.env.SUPABASE_ACCOUNTS_DATABASE_URL = resolvedUrl;

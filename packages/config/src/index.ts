@@ -26,10 +26,10 @@ export const NAV_ITEMS = [
 ] as const;
 
 export const AUTH_ASIDES = [
-  "Fast disappearing media",
-  "Realtime chat with read receipts",
-  "Story rings, streak flames and map presence",
-  "Premium motion and discovery"
+  "YowlMoji, Howls en Moonlight in één flow",
+  "Realtime chat met duidelijke leesbewijzen",
+  "Glow-first design met snelle onboarding",
+  "Privacy-first en camera-first ervaring"
 ] as const;
 
 export const CAMERA_FILTERS = [
@@ -47,7 +47,7 @@ export const HOWL_CATEGORIES = [
   "Sport",
   "Style",
   "Night",
-  "AI"
+  "Glow"
 ] as const;
 
 export const EXPLORE_TRENDS = [

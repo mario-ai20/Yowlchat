@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Camera, KeyRound, Mail, MessageCircleMore, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
-import { APP_NAME } from "@yowl/config";
+import { APP_NAME, AUTH_ASIDES, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
 import { apiFetch } from "../../lib/api";
 import { useSessionStore } from "../../store/session";
@@ -20,15 +20,15 @@ function AuthField({
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; helper?: string }) {
   return (
     <div className="space-y-2">
-      <label className="block text-[13px] font-semibold text-slate-700">{label}</label>
+      <label className="block text-[13px] font-semibold text-white/72">{label}</label>
       <Input
         {...props}
         className={cn(
-          "h-12 border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 focus:border-[var(--yowl-primary)]/60 focus:ring-[var(--yowl-primary)]/20",
+          "h-12 border-white/10 bg-white/5 text-white placeholder:text-white/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md focus:border-[#c084fc]/60 focus:ring-[#c084fc]/25",
           props.className
         )}
       />
-      {helper ? <p className="text-xs text-slate-500">{helper}</p> : null}
+      {helper ? <p className="text-xs text-white/45">{helper}</p> : null}
     </div>
   );
 }
@@ -54,17 +54,17 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   const title = useMemo(() => {
     if (mode === "register") return "Maak een Yowl-account";
     if (mode === "forgot") return "Wachtwoord vergeten";
-    return "Inloggen bij YowlChat";
+    return "Inloggen bij Yowl";
   }, [mode]);
 
   const subtitle = useMemo(() => {
     if (mode === "register") {
-      return "Vul je echte gegevens in en begin meteen met YowlChat.";
+      return "Maak je profiel aan, zet je YowlMoji klaar en stap meteen de app in.";
     }
     if (mode === "forgot") {
-      return "Vraag een herstellink aan met je e-mailadres.";
+      return "Vraag veilig een herstellink aan met je e-mailadres.";
     }
-    return "Gebruik je e-mailadres of gebruikersnaam en wachtwoord om verder te gaan.";
+    return "Gebruik je e-mailadres of gebruikersnaam om verder te gaan.";
   }, [mode]);
 
   const submit = async () => {
@@ -119,68 +119,111 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   }, [hydrated, router, sessionUser]);
 
   return (
-    <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.24),transparent_26%),linear-gradient(180deg,#ffffff_0%,#f8f8f3_100%)] text-slate-950">
-      <div className="mx-auto flex min-h-[100dvh] max-w-6xl flex-col px-4 py-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-[100dvh] overflow-hidden bg-[radial-gradient(circle_at_18%_10%,rgba(192,132,252,0.35),transparent_28%),radial-gradient(circle_at_80%_16%,rgba(236,72,153,0.16),transparent_24%),radial-gradient(circle_at_50%_85%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(180deg,#140922_0%,#0c0715_56%,#09050f_100%)] text-white">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-10%] top-[-12%] h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(196,101,255,0.36),transparent_68%)] blur-3xl" />
+        <div className="absolute right-[-12%] top-[18%] h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(124,58,237,0.3),transparent_68%)] blur-3xl" />
+        <div className="absolute bottom-[-16%] left-[24%] h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle,rgba(236,72,153,0.16),transparent_70%)] blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto flex min-h-[100dvh] max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="flex items-center justify-between py-2">
           <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-[16px] border border-black/10 bg-[var(--yowl-primary)] text-lg font-black text-black shadow-[0_12px_30px_var(--yowl-glow)]">
+            <div className="grid h-11 w-11 place-items-center rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-lg font-black text-white shadow-[0_16px_35px_rgba(168,85,247,0.5)]">
               Y
             </div>
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500">YowlChat</p>
-              <p className="text-sm text-slate-500">Echte mensen. Echte gesprekken.</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-white/48">{APP_NAME}</p>
+              <p className="text-sm text-white/62">Echte mensen. Echte gesprekken. Eigen glow.</p>
             </div>
           </div>
 
-          <div className="hidden items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-2 text-sm text-slate-600 shadow-sm backdrop-blur md:flex">
-            <ShieldCheck className="h-4 w-4 text-[var(--yowl-primary)]" />
-            Secure account flow
+          <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/8 px-3 py-2 text-sm text-white/70 shadow-[0_10px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl md:flex">
+            <ShieldCheck className="h-4 w-4 text-[#d8b4fe]" />
+            Eigen Yowl login
           </div>
         </header>
 
-        <main className="flex flex-1 items-center justify-center py-6">
-          <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1fr_460px] lg:items-center">
+        <main className="flex flex-1 items-center justify-center py-8">
+          <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_480px] lg:items-center">
             <div className="hidden lg:block">
-              <div className="max-w-lg space-y-5">
-                <Badge className="border-black/10 bg-white/80 text-slate-700">Camera-first social platform</Badge>
-                <h1 className="text-5xl font-black tracking-tight text-slate-950 sm:text-6xl">{APP_NAME}</h1>
-                <p className="text-lg leading-8 text-slate-600">Snel, premium en gebouwd voor Howls, chats, YowlMap en Echoes.</p>
+              <div className="max-w-xl space-y-6">
+                <Badge className="border-white/10 bg-white/8 text-white/75 shadow-[0_10px_30px_rgba(0,0,0,0.14)] backdrop-blur-xl">
+                  {AUTH_ASIDES[0]}
+                </Badge>
+
+                <div className="space-y-4">
+                  <h1 className="max-w-lg text-5xl font-black tracking-tight text-white sm:text-6xl">
+                    Welkom bij {APP_NAME}
+                  </h1>
+                  <p className="max-w-xl text-lg leading-8 text-white/68">
+                    Een paarse, glow-first omgeving voor {BRAND_TERMS.Stories}, {BRAND_TERMS.Spotlight},
+                    {` `}YowlMoji en {BRAND_TERMS["Snap Map"]}. Alles voelt van ons, alles blijft snel.
+                  </p>
+                </div>
+
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
-                    { icon: Camera, label: "Howls" },
-                    { icon: MessageCircleMore, label: "Realtime chat" },
-                    { icon: Sparkles, label: "Moonlight" }
+                    { icon: Camera, label: BRAND_TERMS.Stories, description: "Echte verhalen in een opvallende ring." },
+                    { icon: Sparkles, label: BRAND_TERMS.Spotlight, description: "Korte highlights en featured momenten." },
+                    {
+                      icon: MessageCircleMore,
+                      label: BRAND_TERMS["Snap Map"],
+                      description: "Zie waar je vrienden actief zijn."
+                    }
                   ].map((item) => {
                     const Icon = item.icon;
                     return (
                       <div
                         key={item.label}
-                        className="flex items-center gap-3 rounded-[24px] border border-black/10 bg-white/90 px-4 py-3 shadow-sm"
+                        className="rounded-[26px] border border-white/10 bg-white/7 p-4 shadow-[0_12px_35px_rgba(0,0,0,0.18)] backdrop-blur-xl"
                       >
-                        <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[var(--yowl-primary)]/20 text-black">
-                          <Icon className="h-5 w-5" />
+                        <div className="flex items-center gap-3">
+                          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[linear-gradient(135deg,rgba(216,180,254,0.22),rgba(124,58,237,0.18))] text-[#f5e9ff]">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-white">{item.label}</p>
+                            <p className="text-xs text-white/50">Original Yowl</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                          <p className="text-xs text-slate-500">Premium motion</p>
-                        </div>
+                        <p className="mt-3 text-sm leading-6 text-white/64">{item.description}</p>
                       </div>
                     );
                   })}
+                </div>
+
+                <div className="rounded-[30px] border border-white/10 bg-white/7 p-4 shadow-[0_16px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-12 w-12 place-items-center rounded-[18px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-white shadow-[0_18px_30px_rgba(168,85,247,0.35)]">
+                      Y
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">YowlMoji + camera + flow</p>
+                      <p className="text-sm text-white/58">Je eigen avatar, je eigen beweging, je eigen app.</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/60">
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{AUTH_ASIDES[1]}</span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{AUTH_ASIDES[2]}</span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{AUTH_ASIDES[3]}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="mx-auto w-full max-w-[520px]">
-              <Card className="overflow-hidden border-black/10 bg-white p-0 shadow-[0_30px_120px_rgba(0,0,0,0.12)]">
-                <div className="border-b border-slate-200 px-6 pt-6">
-                  <div className="mx-auto flex max-w-[420px] items-center rounded-full border border-slate-200 bg-slate-50 p-1">
+              <Card className="overflow-hidden border-white/10 bg-[rgba(15,8,28,0.78)] p-0 shadow-[0_35px_140px_rgba(61,18,104,0.55)] backdrop-blur-2xl">
+                <div className="border-b border-white/10 px-6 pt-6">
+                  <div className="mx-auto flex max-w-[420px] items-center rounded-full border border-white/10 bg-white/7 p-1 backdrop-blur-xl">
                     <button
                       type="button"
                       onClick={() => router.push("/login")}
                       className={cn(
                         "flex-1 rounded-full px-4 py-2 text-sm font-semibold transition",
-                        isLogin ? "bg-[var(--yowl-primary)] text-black shadow-sm" : "text-slate-500 hover:text-slate-900"
+                        isLogin
+                          ? "bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-white shadow-[0_12px_28px_rgba(168,85,247,0.45)]"
+                          : "text-white/60 hover:text-white"
                       )}
                     >
                       Inloggen
@@ -190,19 +233,21 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       onClick={() => router.push("/register")}
                       className={cn(
                         "flex-1 rounded-full px-4 py-2 text-sm font-semibold transition",
-                        isRegister ? "bg-[var(--yowl-primary)] text-black shadow-sm" : "text-slate-500 hover:text-slate-900"
+                        isRegister
+                          ? "bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-white shadow-[0_12px_28px_rgba(168,85,247,0.45)]"
+                          : "text-white/60 hover:text-white"
                       )}
                     >
                       Aanmelden
                     </button>
                   </div>
 
-                  <div className="mx-auto mt-6 grid h-16 w-16 place-items-center rounded-[24px] border border-black/10 bg-[var(--yowl-primary)] text-3xl font-black text-black shadow-[0_14px_30px_var(--yowl-glow)]">
+                  <div className="mx-auto mt-6 grid h-16 w-16 place-items-center rounded-[24px] border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-3xl font-black text-white shadow-[0_20px_50px_rgba(168,85,247,0.45)]">
                     Y
                   </div>
                   <div className="mx-auto max-w-md pb-5 pt-5 text-center">
-                    <h2 className="text-3xl font-black tracking-tight text-slate-950">{title}</h2>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">{subtitle}</p>
+                    <h2 className="text-3xl font-black tracking-tight text-white">{title}</h2>
+                    <p className="mt-3 text-sm leading-6 text-white/62">{subtitle}</p>
                   </div>
                 </div>
 
@@ -258,7 +303,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="block text-[13px] font-semibold text-slate-700">Gender</label>
+                        <label className="block text-[13px] font-semibold text-white/72">Gender</label>
                         <div className="grid grid-cols-3 gap-2">
                           {[
                             { label: "Man", value: "man" as Gender },
@@ -272,8 +317,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                               className={cn(
                                 "rounded-2xl border px-3 py-3 text-sm font-semibold transition",
                                 gender === item.value
-                                  ? "border-[var(--yowl-primary)] bg-[var(--yowl-primary)] text-black shadow-sm"
-                                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                  ? "border-[#c084fc]/50 bg-white/12 text-white shadow-[0_12px_30px_rgba(168,85,247,0.22)]"
+                                  : "border-white/10 bg-white/5 text-white/68 hover:bg-white/8"
                               )}
                             >
                               {item.label}
@@ -312,7 +357,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       <button
                         type="button"
                         onClick={() => router.push("/forgot-password")}
-                        className="text-left text-sm font-semibold text-slate-500 transition hover:text-slate-900"
+                        className="text-left text-sm font-semibold text-white/60 transition hover:text-white"
                       >
                         Wachtwoord vergeten?
                       </button>
@@ -330,9 +375,17 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     </div>
                   )}
 
-                  {error ? <div className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
+                  {error ? (
+                    <div className="rounded-[18px] border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                      {error}
+                    </div>
+                  ) : null}
 
-                  <Button type="submit" className="h-12 w-full rounded-full text-base" disabled={loading}>
+                  <Button
+                    type="submit"
+                    className="h-12 w-full rounded-full border border-white/10 bg-[linear-gradient(135deg,#d8b4fe_0%,#a855f7_55%,#7c3aed_100%)] text-base text-white shadow-[0_18px_55px_rgba(168,85,247,0.42)] transition hover:brightness-105 disabled:opacity-60"
+                    disabled={loading}
+                  >
                     {loading ? (
                       "Even laden..."
                     ) : isRegister ? (
@@ -353,11 +406,11 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     )}
                   </Button>
 
-                  <div className="flex items-center justify-center text-sm text-slate-600">
-                    <span>{isLogin ? "Nog nieuw bij YowlChat?" : isRegister ? "Al een account?" : "Terug naar login?"}</span>
+                  <div className="flex items-center justify-center text-sm text-white/65">
+                    <span>{isLogin ? "Nog nieuw bij Yowl?" : isRegister ? "Al een account?" : "Terug naar login?"}</span>
                     <button
                       type="button"
-                      className="ml-2 inline-flex items-center gap-1 font-semibold text-slate-900 underline decoration-[var(--yowl-primary)] decoration-2 underline-offset-4"
+                      className="ml-2 inline-flex items-center gap-1 font-semibold text-white underline decoration-[#d8b4fe] decoration-2 underline-offset-4"
                       onClick={() => router.push(isLogin ? "/register" : "/login")}
                     >
                       {isLogin ? "Aanmelden" : "Inloggen"}
@@ -371,12 +424,12 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         </main>
 
         <footer className="pb-3 pt-2">
-          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 text-xs text-white/48">
             <div className="flex flex-wrap gap-3">
-              <span>Howls</span>
-              <span>Moonlight</span>
-              <span>YowlMap</span>
-              <span>Echoes</span>
+              <span>{BRAND_TERMS.Stories}</span>
+              <span>{BRAND_TERMS.Spotlight}</span>
+              <span>{BRAND_TERMS["Snap Map"]}</span>
+              <span>{BRAND_TERMS.Memories}</span>
             </div>
             <div className="flex flex-wrap gap-3">
               <span>Privacy</span>
