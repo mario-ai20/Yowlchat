@@ -4,11 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "prebuild": "npm exec -- prisma generate --schema prisma/schema.prisma",
+    "prebuild": "node scripts/prisma-generate.mjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prisma:generate": "npm exec -- prisma generate --schema prisma/schema.prisma",
+    "prisma:generate": "node scripts/prisma-generate.mjs",
     "prisma:migrate": "npm exec -- prisma migrate dev --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts"
   },
