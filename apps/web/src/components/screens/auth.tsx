@@ -3,7 +3,7 @@
 import { useEffect, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
+import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
 import { APP_NAME, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
 import { apiFetch } from "../../lib/api";
@@ -16,6 +16,7 @@ import type { AppLocale, YowlUser } from "@yowl/types";
 
 type AuthMode = "login" | "register" | "forgot";
 type Gender = "man" | "vrouw" | "geen_van_beide";
+type FooterFeatureKey = "howls" | "moonlight" | "yowlmap" | "echoes";
 
 function AuthField({
   label,
@@ -84,6 +85,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   const [locale, setLocale] = useState<AppLocale>(() => getPreferredLocale());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeFeature, setActiveFeature] = useState<FooterFeatureKey | null>(null);
   const copy = getUiCopy(locale).auth;
   const title = mode === "register" ? copy.registerTitle : mode === "forgot" ? copy.forgotTitle : copy.loginTitle;
   const subtitle = mode === "register" ? copy.registerSubtitle : mode === "forgot" ? copy.forgotSubtitle : copy.loginSubtitle;
@@ -163,10 +165,10 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   ] as const;
   const pillTags = [copy.pill1, copy.pill2, copy.pill3];
   const footerFeatureLinks = [
-    { label: BRAND_TERMS.Stories, href: "/howls" },
-    { label: BRAND_TERMS.Spotlight, href: "/moonlight" },
-    { label: BRAND_TERMS["Snap Map"], href: "/yowlmap" },
-    { label: BRAND_TERMS.Memories, href: "/echoes" }
+    { key: "howls" as const, label: BRAND_TERMS.Stories },
+    { key: "moonlight" as const, label: BRAND_TERMS.Spotlight },
+    { key: "yowlmap" as const, label: BRAND_TERMS["Snap Map"] },
+    { key: "echoes" as const, label: BRAND_TERMS.Memories }
   ] as const;
   const footerHelpLinks = [
     { label: copy.footerPrivacy, href: "/settings" },
@@ -193,6 +195,19 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       setLocale(sessionUser.locale);
     }
   }, [locale, sessionUser?.locale]);
+
+  useEffect(() => {
+    if (!activeFeature) return undefined;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActiveFeature(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeFeature]);
 
   return (
     <div className="relative min-h-[100dvh] w-screen overflow-hidden bg-[radial-gradient(circle_at_18%_10%,rgba(192,132,252,0.35),transparent_28%),radial-gradient(circle_at_80%_16%,rgba(236,72,153,0.16),transparent_24%),radial-gradient(circle_at_50%_85%,rgba(59,130,246,0.12),transparent_26%),linear-gradient(180deg,#140922_0%,#0c0715_56%,#09050f_100%)] text-white">
@@ -506,13 +521,14 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 text-xs text-white/48">
             <div className="flex flex-wrap gap-3">
               {footerFeatureLinks.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => setActiveFeature(item.key)}
                   className="rounded-full px-2 py-1 transition hover:bg-white/6 hover:text-white"
                 >
                   {item.label}
-                </Link>
+                </button>
               ))}
             </div>
             <div className="flex flex-wrap gap-3">
@@ -538,6 +554,37 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             </div>
           </div>
         </footer>
+
+        {activeFeature ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm"
+            onClick={() => setActiveFeature(null)}
+            role="presentation"
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="feature-info-title"
+              className="relative w-full max-w-[520px] rounded-[28px] border border-white/10 bg-[rgba(18,10,26,0.98)] p-6 shadow-[0_30px_120px_rgba(0,0,0,0.55)]"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveFeature(null)}
+                className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-white/72 transition hover:bg-white/10 hover:text-white"
+                aria-label="Sluit info"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/42">Info</p>
+              <h3 id="feature-info-title" className="mt-2 text-3xl font-black tracking-tight text-white">
+                {copy.featureInfo[activeFeature].title}
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-white/70">{copy.featureInfo[activeFeature].body}</p>
+              <p className="mt-5 text-xs uppercase tracking-[0.22em] text-white/38">Klik buiten dit venster of op het kruisje om te sluiten</p>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

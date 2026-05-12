@@ -70,6 +70,12 @@ type AuthCopy = {
   footerPrivacy: string;
   footerSecurity: string;
   footerSupport: string;
+  featureInfo: {
+    howls: { title: string; body: string };
+    moonlight: { title: string; body: string };
+    yowlmap: { title: string; body: string };
+    echoes: { title: string; body: string };
+  };
 };
 
 const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
@@ -142,7 +148,13 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       languageHelper: "Kies de taal voor je hele app",
       footerPrivacy: "Privacy",
       footerSecurity: "Veiligheid",
-      footerSupport: "Support"
+      footerSupport: "Support",
+      featureInfo: {
+        howls: { title: "Howls", body: "Korte verhalen van je vrienden in een duidelijke ring, zodat je snel ziet wat er speelt." },
+        moonlight: { title: "Moonlight", body: "Korte highlights en snelle momenten die je meteen kunt bekijken zonder de flow te verlaten." },
+        yowlmap: { title: "YowlMap", body: "Zie waar je vrienden actief zijn op een kaart, met een privacy-first weergave." },
+        echoes: { title: "Echoes", body: "Bewaarde momenten, herinneringen en clips die je later nog eens terug kunt kijken." }
+      }
     }
   },
   en: {
@@ -214,7 +226,13 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       languageHelper: "Choose the language for your whole app",
       footerPrivacy: "Privacy",
       footerSecurity: "Safety",
-      footerSupport: "Support"
+      footerSupport: "Support",
+      featureInfo: {
+        howls: { title: "Howls", body: "Quick stories from your friends in a clear ring, so you can see what is happening at a glance." },
+        moonlight: { title: "Moonlight", body: "Short highlights and fast moments you can view without leaving the flow." },
+        yowlmap: { title: "YowlMap", body: "See where your friends are active on a map, with a privacy-first view." },
+        echoes: { title: "Echoes", body: "Saved moments, memories and clips you can come back to later." }
+      }
     }
   },
   fr: {
@@ -286,7 +304,13 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       languageHelper: "Choisissez la langue pour toute votre app",
       footerPrivacy: "Confidentialité",
       footerSecurity: "Sécurité",
-      footerSupport: "Support"
+      footerSupport: "Support",
+      featureInfo: {
+        howls: { title: "Howls", body: "Des stories rapides de vos amis, affichées clairement pour voir ce qui se passe d'un coup d'œil." },
+        moonlight: { title: "Moonlight", body: "Des highlights courts et des moments rapides à consulter sans quitter le flux." },
+        yowlmap: { title: "YowlMap", body: "Voyez où vos amis sont actifs sur une carte, avec une vue pensée pour la confidentialité." },
+        echoes: { title: "Echoes", body: "Des moments sauvegardés, souvenirs et clips à revoir plus tard." }
+      }
     }
   },
   de: {
@@ -358,7 +382,13 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       languageHelper: "Wähle die Sprache für deine ganze App",
       footerPrivacy: "Datenschutz",
       footerSecurity: "Sicherheit",
-      footerSupport: "Support"
+      footerSupport: "Support",
+      featureInfo: {
+        howls: { title: "Howls", body: "Kurze Stories deiner Freunde in einem klaren Ring, damit du sofort siehst, was los ist." },
+        moonlight: { title: "Moonlight", body: "Kurze Highlights und schnelle Momente, die du ansehen kannst, ohne den Flow zu verlassen." },
+        yowlmap: { title: "YowlMap", body: "Sieh auf einer Karte, wo deine Freunde aktiv sind, mit einer Privacy-first-Ansicht." },
+        echoes: { title: "Echoes", body: "Gespeicherte Momente, Erinnerungen und Clips, die du später wieder ansehen kannst." }
+      }
     }
   },
   es: {
@@ -430,7 +460,13 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       languageHelper: "Elige el idioma para toda tu app",
       footerPrivacy: "Privacidad",
       footerSecurity: "Seguridad",
-      footerSupport: "Soporte"
+      footerSupport: "Soporte",
+      featureInfo: {
+        howls: { title: "Howls", body: "Historias rápidas de tus amigos en un anillo claro, para ver al instante lo que pasa." },
+        moonlight: { title: "Moonlight", body: "Destacados cortos y momentos rápidos que puedes ver sin salir del flujo." },
+        yowlmap: { title: "YowlMap", body: "Mira dónde están activos tus amigos en un mapa, con una vista centrada en la privacidad." },
+        echoes: { title: "Echoes", body: "Momentos guardados, recuerdos y clips que puedes volver a ver más tarde." }
+      }
     }
   },
   it: {
@@ -502,7 +538,13 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       languageHelper: "Scegli la lingua per tutta l'app",
       footerPrivacy: "Privacy",
       footerSecurity: "Sicurezza",
-      footerSupport: "Supporto"
+      footerSupport: "Supporto",
+      featureInfo: {
+        howls: { title: "Howls", body: "Storie rapide dei tuoi amici in un anello chiaro, così vedi subito cosa succede." },
+        moonlight: { title: "Moonlight", body: "Highlight brevi e momenti veloci da guardare senza uscire dal flusso." },
+        yowlmap: { title: "YowlMap", body: "Vedi dove sono attivi i tuoi amici su una mappa, con una vista privacy-first." },
+        echoes: { title: "Echoes", body: "Momenti salvati, ricordi e clip da rivedere più tardi." }
+      }
     }
   },
   pt: {
@@ -574,7 +616,13 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       languageHelper: "Escolhe o idioma para a tua app inteira",
       footerPrivacy: "Privacidade",
       footerSecurity: "Segurança",
-      footerSupport: "Suporte"
+      footerSupport: "Suporte",
+      featureInfo: {
+        howls: { title: "Howls", body: "Stories rápidas dos teus amigos num anel claro, para veres logo o que se passa." },
+        moonlight: { title: "Moonlight", body: "Destaques curtos e momentos rápidos para veres sem sair do fluxo." },
+        yowlmap: { title: "YowlMap", body: "Vê onde os teus amigos estão ativos num mapa, com uma vista privacy-first." },
+        echoes: { title: "Echoes", body: "Momentos guardados, memórias e clips que podes rever mais tarde." }
+      }
     }
   }
 };
