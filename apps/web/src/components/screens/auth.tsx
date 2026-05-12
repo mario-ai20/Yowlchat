@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
-import { APP_NAME, AUTH_ASIDES, BRAND_TERMS } from "@yowl/config";
+import { APP_NAME, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
 import { apiFetch } from "../../lib/api";
 import { applyLocale, getPreferredLocale, setStoredLocale } from "../../lib/locale";
@@ -153,6 +153,26 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
   const isLogin = mode === "login";
   const isRegister = mode === "register";
+  const introBadge = "Alles op één plek";
+  const introLine = "Chats, Howls, YowlMoji en YowlMap in één app. Simpel, snel en herkenbaar.";
+  const featureCards = [
+    {
+      icon: Camera,
+      label: BRAND_TERMS.Stories,
+      description: "Foto's en video's van je vrienden."
+    },
+    {
+      icon: Sparkles,
+      label: BRAND_TERMS.Spotlight,
+      description: "Korte clips en highlights in één feed."
+    },
+    {
+      label: BRAND_TERMS["Snap Map"],
+      icon: MapPin,
+      description: "Zie waar je vrienden nu zijn."
+    }
+  ] as const;
+  const pillTags = ["Je taal onthouden", "Privacy netjes geregeld", "Camera en chat dichtbij"];
 
   useEffect(() => {
     if (hydrated && sessionUser) {
@@ -202,7 +222,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             <div className="hidden lg:block">
               <div className="max-w-xl space-y-6">
                 <Badge className="border-white/10 bg-white/8 text-white/75 shadow-[0_10px_30px_rgba(0,0,0,0.14)] backdrop-blur-xl">
-                  {AUTH_ASIDES[0]}
+                  {introBadge}
                 </Badge>
 
                 <div className="space-y-4">
@@ -210,21 +230,12 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     Welkom bij {APP_NAME}
                   </h1>
                   <p className="max-w-xl text-lg leading-8 text-white/68">
-                    Een paarse, glow-first omgeving voor {BRAND_TERMS.Stories}, {BRAND_TERMS.Spotlight},
-                    {` `}YowlMoji en {BRAND_TERMS["Snap Map"]}. Alles voelt van ons, alles blijft snel.
+                    {introLine}
                   </p>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {[
-                    { icon: Camera, label: BRAND_TERMS.Stories, description: "Echte verhalen in een opvallende ring." },
-                    { icon: Sparkles, label: BRAND_TERMS.Spotlight, description: "Korte highlights en featured momenten." },
-                    {
-                      label: BRAND_TERMS["Snap Map"],
-                      icon: MapPin,
-                      description: "Zie waar je vrienden actief zijn."
-                    }
-                  ].map((item) => {
+                  {featureCards.map((item) => {
                     const Icon = item.icon;
                     return (
                       <div
@@ -237,7 +248,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-white">{item.label}</p>
-                            <p className="text-xs text-white/50">Original Yowl</p>
+                            <p className="text-xs text-white/50">In Yowl</p>
                           </div>
                         </div>
                         <p className="mt-3 text-sm leading-6 text-white/64">{item.description}</p>
@@ -252,14 +263,16 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       Y
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-white">YowlMoji + camera + flow</p>
-                      <p className="text-sm text-white/58">Je eigen avatar, je eigen beweging, je eigen app.</p>
+                      <p className="text-sm font-semibold text-white">Je profiel, je camera, je feed</p>
+                      <p className="text-sm text-white/58">Alles wat je nodig hebt, zonder extra gedoe.</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/60">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{AUTH_ASIDES[1]}</span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{AUTH_ASIDES[2]}</span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{AUTH_ASIDES[3]}</span>
+                    {pillTags.map((tag) => (
+                      <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>
