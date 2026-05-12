@@ -9,7 +9,7 @@
     "pretypecheck": "npm run prisma:generate",
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prisma:generate": "npm exec -- prisma generate --schema prisma/schema.prisma",
+    "prisma:generate": "node ./scripts/prisma-generate.mjs",
     "prisma:migrate": "npm exec -- prisma migrate dev --schema prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts"
   },
