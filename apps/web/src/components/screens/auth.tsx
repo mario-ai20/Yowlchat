@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import { APP_NAME, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
@@ -173,6 +174,20 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
     }
   ] as const;
   const pillTags = ["Je taal onthouden", "Privacy netjes geregeld", "Camera en chat dichtbij"];
+  const footerFeatureLinks = [
+    { label: BRAND_TERMS.Stories, href: "/howls" },
+    { label: BRAND_TERMS.Spotlight, href: "/moonlight" },
+    { label: BRAND_TERMS["Snap Map"], href: "/yowlmap" },
+    { label: BRAND_TERMS.Memories, href: "/echoes" }
+  ] as const;
+  const footerHelpLinks = [
+    { label: "Privacy", href: "/settings" },
+    { label: "Veiligheid", href: "/settings" },
+    {
+      label: "Support",
+      href: "mailto:yowl.maffia@gmail.com?subject=YowlChat%20support&body=Hallo%20Yowl,%0A%0AIk%20heb%20hulp%20nodig%20met:%0A"
+    }
+  ] as const;
 
   useEffect(() => {
     if (hydrated && sessionUser) {
@@ -501,15 +516,36 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         <footer className="pb-3 pt-2">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 text-xs text-white/48">
             <div className="flex flex-wrap gap-3">
-              <span>{BRAND_TERMS.Stories}</span>
-              <span>{BRAND_TERMS.Spotlight}</span>
-              <span>{BRAND_TERMS["Snap Map"]}</span>
-              <span>{BRAND_TERMS.Memories}</span>
+              {footerFeatureLinks.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="rounded-full px-2 py-1 transition hover:bg-white/6 hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
             <div className="flex flex-wrap gap-3">
-              <span>Privacy</span>
-              <span>Veiligheid</span>
-              <span>Support</span>
+              {footerHelpLinks.map((item) =>
+                item.href.startsWith("mailto:") ? (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="rounded-full px-2 py-1 transition hover:bg-white/6 hover:text-white"
+                  >
+                    {item.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="rounded-full px-2 py-1 transition hover:bg-white/6 hover:text-white"
+                  >
+                    {item.label}
+                  </Link>
+                )
+              )}
             </div>
           </div>
         </footer>
