@@ -19,8 +19,16 @@ async function getExpressApp() {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const expressApp = await getExpressApp();
-  const originalUrl = req.url ?? "/";
-  req.url = originalUrl.replace(/^\/api/, "") || "/";
-  return expressApp(req as never, res as never);
+  try {
+    const expressApp = await getExpressApp();
+    const originalUrl = req.url ?? "/";
+    req.url = originalUrl.replace(/^\/api/, "") || "/";
+    return expressApp(req as never, res as never);
+  } catch (error) {
+    console.error("API handler crashed", error);
+    if (!res.headersSent) {
+      return res.status(503).json({ error: "API temporarily unavailable" });
+    }
+    return undefined;
+  }
 }

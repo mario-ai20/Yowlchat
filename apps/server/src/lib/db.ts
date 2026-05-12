@@ -29,13 +29,13 @@ function resolveUrl(kind: "accounts" | "core") {
 }
 
 function createClient(kind: "accounts" | "core") {
-  const globalKey = kind === "accounts" ? "__yowlAccountsPrisma" : "__yowlCorePrisma";
   const url = resolveUrl(kind);
 
   if (!url) {
     throw new Error(`${kind} database URL is not configured`);
   }
 
+  const globalKey = kind === "accounts" ? "__yowlAccountsPrisma" : "__yowlCorePrisma";
   const existing = globalThis[globalKey as keyof typeof globalThis] as PrismaClient | undefined;
   if (existing) return existing;
 
@@ -53,11 +53,36 @@ function createClient(kind: "accounts" | "core") {
   return client;
 }
 
-export const accountsDb: DbClient =
-  createClient("accounts");
+function createLazyClient(kind: "accounts" | "core") {
+  return new Proxy({} as PrismaClient, {
+    get(_target, prop, receiver) {
+      const client = createClient(kind);
+      const value = Reflect.get(client as never, prop, receiver);
 
-export const coreDb: DbClient =
-  createClient("core");
+      if (typeof value === "function") {
+        return (value as (...args: never[]) => unknown).bind(client);
+      }
+
+      return value;
+    },
+    has(_target, prop) {
+      const client = createClient(kind);
+      return prop in client;
+    },
+    ownKeys() {
+      const client = createClient(kind);
+      return Reflect.ownKeys(client);
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      const client = createClient(kind);
+      return Object.getOwnPropertyDescriptor(client, prop);
+    }
+  });
+}
+
+export const accountsDb: DbClient = createLazyClient("accounts");
+
+export const coreDb: DbClient = createLazyClient("core");
 
 export const hasAccountsDatabase = Boolean(resolveUrl("accounts"));
 export const hasCoreDatabase = Boolean(resolveUrl("core"));
