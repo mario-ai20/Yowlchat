@@ -2,7 +2,7 @@
   "name": "@yowl/web",
   "private": true,
   "scripts": {
-    "prebuild": "npm run build --workspace @yowl/server && node scripts/copy-server-dist.mjs",
+    "prebuild": "cd ../.. && npm install && npm run build --workspace @yowl/server && node apps/web/scripts/copy-server-dist.mjs",
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
