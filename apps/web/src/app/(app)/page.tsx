@@ -1,5 +1,5 @@
-import { HomeScreen } from "../../components/screens/home";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <HomeScreen />;
+  redirect("/login");
 }
