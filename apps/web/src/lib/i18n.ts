@@ -76,6 +76,10 @@ type AuthCopy = {
     yowlmap: { title: string; body: string };
     echoes: { title: string; body: string };
   };
+  footerInfo: {
+    privacy: { title: string; body: string };
+    security: { title: string; body: string };
+  };
 };
 
 const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
@@ -154,6 +158,16 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
         moonlight: { title: "Moonlight", body: "Korte highlights en snelle momenten die je meteen kunt bekijken zonder de flow te verlaten." },
         yowlmap: { title: "YowlMap", body: "Zie waar je vrienden actief zijn op een kaart, met een privacy-first weergave." },
         echoes: { title: "Echoes", body: "Bewaarde momenten, herinneringen en clips die je later nog eens terug kunt kijken." }
+      },
+      footerInfo: {
+        privacy: {
+          title: "Privacy",
+          body: "Yowl bewaart alleen wat nodig is om je account, chats en voorkeuren te laten werken. Je taal, zichtbaarheid, camera- en meldingsinstellingen horen bij je account zodat je ze op elk toestel terugziet. Je bepaalt zelf wat zichtbaar is voor anderen, en je kunt je profiel en zichtbaarheid later altijd aanpassen."
+        },
+        security: {
+          title: "Veiligheid",
+          body: "We gebruiken veilige sessies, accountbeveiliging en duidelijke foutmeldingen zodat je niet onnodig technische details ziet. In de app houden we gevoelige acties afgeschermd en blijven belangrijke instellingen onder je controle. Als iets niet klopt, helpen we je via support of accountinstellingen verder."
+        }
       }
     }
   },
@@ -232,6 +246,16 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
         moonlight: { title: "Moonlight", body: "Short highlights and fast moments you can view without leaving the flow." },
         yowlmap: { title: "YowlMap", body: "See where your friends are active on a map, with a privacy-first view." },
         echoes: { title: "Echoes", body: "Saved moments, memories and clips you can come back to later." }
+      },
+      footerInfo: {
+        privacy: {
+          title: "Privacy",
+          body: "Yowl stores only what is needed for your account, chats and preferences to work. Your language, visibility, camera and notification settings belong to your account so they follow you across devices. You stay in control of what others can see, and you can change your profile or visibility at any time."
+        },
+        security: {
+          title: "Safety",
+          body: "We use secure sessions, account protection and clear errors so you do not see technical details you do not need. Sensitive actions stay behind protective layers, while important settings remain under your control. If something looks wrong, support and account settings are there to help."
+        }
       }
     }
   },
@@ -310,6 +334,16 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
         moonlight: { title: "Moonlight", body: "Des highlights courts et des moments rapides à consulter sans quitter le flux." },
         yowlmap: { title: "YowlMap", body: "Voyez où vos amis sont actifs sur une carte, avec une vue pensée pour la confidentialité." },
         echoes: { title: "Echoes", body: "Des moments sauvegardés, souvenirs et clips à revoir plus tard." }
+      },
+      footerInfo: {
+        privacy: {
+          title: "Confidentialité",
+          body: "Yowl conserve seulement ce qu'il faut pour faire fonctionner votre compte, vos chats et vos préférences. Votre langue, votre visibilité, la caméra et les notifications suivent votre compte, pour que tout reste cohérent sur vos appareils. Vous gardez le contrôle sur ce que les autres voient, et vous pouvez modifier votre profil ou votre visibilité à tout moment."
+        },
+        security: {
+          title: "Sécurité",
+          body: "Nous utilisons des sessions sécurisées, une protection du compte et des erreurs claires pour éviter d'afficher des détails techniques inutiles. Les actions sensibles restent protégées, tandis que les réglages importants restent sous votre contrôle. Si quelque chose semble anormal, le support et les paramètres du compte sont là pour aider."
+        }
       }
     }
   },
@@ -388,6 +422,16 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
         moonlight: { title: "Moonlight", body: "Kurze Highlights und schnelle Momente, die du ansehen kannst, ohne den Flow zu verlassen." },
         yowlmap: { title: "YowlMap", body: "Sieh auf einer Karte, wo deine Freunde aktiv sind, mit einer Privacy-first-Ansicht." },
         echoes: { title: "Echoes", body: "Gespeicherte Momente, Erinnerungen und Clips, die du später wieder ansehen kannst." }
+      },
+      footerInfo: {
+        privacy: {
+          title: "Datenschutz",
+          body: "Yowl speichert nur das, was nötig ist, damit dein Konto, deine Chats und deine Einstellungen funktionieren. Sprache, Sichtbarkeit, Kamera und Benachrichtigungen gehören zu deinem Konto, damit sie auf allen Geräten gleich bleiben. Du bestimmst selbst, was andere sehen können, und kannst dein Profil oder deine Sichtbarkeit jederzeit ändern."
+        },
+        security: {
+          title: "Sicherheit",
+          body: "Wir nutzen sichere Sitzungen, Kontoschutz und klare Fehlermeldungen, damit du keine unnötigen technischen Details siehst. Sensible Aktionen bleiben geschützt, während wichtige Einstellungen unter deiner Kontrolle bleiben. Wenn etwas nicht stimmt, helfen Support und Kontoeinstellungen weiter."
+        }
       }
     }
   },
@@ -466,6 +510,16 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
         moonlight: { title: "Moonlight", body: "Destacados cortos y momentos rápidos que puedes ver sin salir del flujo." },
         yowlmap: { title: "YowlMap", body: "Mira dónde están activos tus amigos en un mapa, con una vista centrada en la privacidad." },
         echoes: { title: "Echoes", body: "Momentos guardados, recuerdos y clips que puedes volver a ver más tarde." }
+      },
+      footerInfo: {
+        privacy: {
+          title: "Privacidad",
+          body: "Yowl guarda solo lo necesario para que tu cuenta, chats y preferencias funcionen. El idioma, la visibilidad, la cámara y las notificaciones pertenecen a tu cuenta para que se mantengan iguales en todos tus dispositivos. Tú decides qué pueden ver los demás y puedes cambiar tu perfil o visibilidad cuando quieras."
+        },
+        security: {
+          title: "Seguridad",
+          body: "Usamos sesiones seguras, protección de cuenta y errores claros para que no veas detalles técnicos innecesarios. Las acciones sensibles se mantienen protegidas, mientras que los ajustes importantes siguen bajo tu control. Si algo no parece correcto, soporte y ajustes de cuenta están ahí para ayudarte."
+        }
       }
     }
   },
@@ -544,6 +598,16 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
         moonlight: { title: "Moonlight", body: "Highlight brevi e momenti veloci da guardare senza uscire dal flusso." },
         yowlmap: { title: "YowlMap", body: "Vedi dove sono attivi i tuoi amici su una mappa, con una vista privacy-first." },
         echoes: { title: "Echoes", body: "Momenti salvati, ricordi e clip da rivedere più tardi." }
+      },
+      footerInfo: {
+        privacy: {
+          title: "Privacy",
+          body: "Yowl salva solo ciò che serve per far funzionare il tuo account, le chat e le preferenze. Lingua, visibilità, camera e notifiche appartengono al tuo account così restano uguali su tutti i dispositivi. Decidi tu cosa gli altri possono vedere e puoi cambiare il tuo profilo o la visibilità quando vuoi."
+        },
+        security: {
+          title: "Sicurezza",
+          body: "Usiamo sessioni sicure, protezione dell'account e messaggi di errore chiari così non vedi dettagli tecnici inutili. Le azioni sensibili restano protette, mentre le impostazioni importanti restano sotto il tuo controllo. Se qualcosa non va, supporto e impostazioni account sono lì per aiutarti."
+        }
       }
     }
   },
@@ -622,6 +686,16 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
         moonlight: { title: "Moonlight", body: "Destaques curtos e momentos rápidos para veres sem sair do fluxo." },
         yowlmap: { title: "YowlMap", body: "Vê onde os teus amigos estão ativos num mapa, com uma vista privacy-first." },
         echoes: { title: "Echoes", body: "Momentos guardados, memórias e clips que podes rever mais tarde." }
+      },
+      footerInfo: {
+        privacy: {
+          title: "Privacidade",
+          body: "A Yowl guarda apenas o necessário para a tua conta, conversas e preferências funcionarem. Idioma, visibilidade, câmara e notificações pertencem à tua conta, para que fiquem iguais em todos os dispositivos. Tu decides o que os outros podem ver e podes mudar o teu perfil ou visibilidade quando quiseres."
+        },
+        security: {
+          title: "Segurança",
+          body: "Usamos sessões seguras, proteção de conta e erros claros para que não vejas detalhes técnicos desnecessários. As ações sensíveis ficam protegidas, enquanto as definições importantes continuam sob o teu controlo. Se algo parecer errado, o suporte e as definições da conta ajudam-te."
+        }
       }
     }
   }
