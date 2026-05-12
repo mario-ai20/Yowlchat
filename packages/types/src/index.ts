@@ -17,9 +17,12 @@ export interface YowlUser {
   avatarUrl?: string | null;
   bio?: string | null;
   location?: string | null;
+  theme: "light" | "dark";
   publicProfile: boolean;
   flames: number;
   yowlScore: number;
+  pushNotificationsEnabled: boolean;
+  autoSaveEchoes: boolean;
   friendsCount: number;
   isOnline: boolean;
   isGhostMode: boolean;

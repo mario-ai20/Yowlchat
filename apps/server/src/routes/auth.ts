@@ -3,11 +3,11 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { accountsDb as prisma, coreDb as corePrisma } from "../lib/db.js";
 import { HttpError } from "../lib/errors.js";
+import { clearAuthCookies, setAuthCookies } from "../lib/cookies.js";
 import { authenticateRequest, type AuthenticatedRequest } from "../middleware/auth.js";
 import { getClientIp } from "../lib/http.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt.js";
 import { serializeUser } from "../lib/serializers.js";
-import { hasAccountsDatabase } from "../lib/db.js";
 
 const router = Router();
 
@@ -18,6 +18,7 @@ const registerSchema = z.object({
   birthDate: z.coerce.date(),
   phoneNumber: z.string().min(6).max(32),
   gender: z.enum(["man", "vrouw", "geen_van_beide"]),
+  theme: z.enum(["light", "dark"]).default("dark"),
   password: z.string().min(8).max(128),
 });
 
@@ -40,6 +41,9 @@ const updateMeSchema = z.object({
   bio: z.string().max(160).nullable().optional(),
   location: z.string().max(80).nullable().optional(),
   avatarUrl: z.string().url().nullable().optional(),
+  theme: z.enum(["light", "dark"]).optional(),
+  pushNotificationsEnabled: z.boolean().optional(),
+  autoSaveEchoes: z.boolean().optional(),
   publicProfile: z.boolean().optional(),
   isGhostMode: z.boolean().optional()
 });
@@ -79,6 +83,9 @@ async function syncCoreUser(user: {
   birthDate: Date | null;
   phoneNumber: string | null;
   gender: string | null;
+  theme: string;
+  pushNotificationsEnabled: boolean;
+  autoSaveEchoes: boolean;
   displayName: string;
   avatarUrl: string | null;
   bio: string | null;
@@ -99,6 +106,9 @@ async function syncCoreUser(user: {
       birthDate: user.birthDate,
       phoneNumber: user.phoneNumber,
       gender: user.gender,
+      theme: user.theme,
+      pushNotificationsEnabled: user.pushNotificationsEnabled,
+      autoSaveEchoes: user.autoSaveEchoes,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
@@ -118,6 +128,9 @@ async function syncCoreUser(user: {
       birthDate: user.birthDate,
       phoneNumber: user.phoneNumber,
       gender: user.gender,
+      theme: user.theme,
+      pushNotificationsEnabled: user.pushNotificationsEnabled,
+      autoSaveEchoes: user.autoSaveEchoes,
       displayName: user.displayName,
       passwordHash: "",
       avatarUrl: user.avatarUrl,
@@ -140,22 +153,17 @@ async function syncCoreUserSafely(user: Parameters<typeof syncCoreUser>[0]) {
   }
 }
 
-async function buildAuthResponse(userId: string, sessionId: string) {
+async function buildAuthResponse(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  const [friends, tokens] = await Promise.all([friendsCount(userId), issueTokens(userId, sessionId)]);
+  const friends = await friendsCount(userId);
   await syncCoreUserSafely(user);
   return {
-    ...tokens,
     user: serializeUser(user, { friendsCount: friends, isOnline: true })
   };
 }
 
 router.post("/register", async (req, res, next) => {
   try {
-    if (!hasAccountsDatabase) {
-      throw new HttpError(503, "Accounts database is not configured");
-    }
-
     const body = registerSchema.parse(req.body);
     const displayName = createDisplayName(body.firstName, body.lastName);
     const existingEmail = await prisma.user.findFirst({
@@ -187,6 +195,9 @@ router.post("/register", async (req, res, next) => {
         birthDate: body.birthDate,
         phoneNumber: body.phoneNumber,
         gender: body.gender,
+        theme: body.theme,
+        pushNotificationsEnabled: true,
+        autoSaveEchoes: true,
         displayName,
         passwordHash,
         yowlScore: 100,
@@ -208,8 +219,9 @@ router.post("/register", async (req, res, next) => {
       where: { id: session.id },
       data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
     });
+    setAuthCookies(res, tokens);
 
-    res.json(await buildAuthResponse(user.id, session.id));
+    res.json(await buildAuthResponse(user.id));
   } catch (error) {
     next(error);
   }
@@ -217,10 +229,6 @@ router.post("/register", async (req, res, next) => {
 
 router.post("/login", async (req, res, next) => {
   try {
-    if (!hasAccountsDatabase) {
-      throw new HttpError(503, "Accounts database is not configured");
-    }
-
     const body = loginSchema.parse(req.body);
     const user = await prisma.user.findFirst({
       where: {
@@ -251,8 +259,9 @@ router.post("/login", async (req, res, next) => {
       where: { id: session.id },
       data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
     });
+    setAuthCookies(res, tokens);
 
-    res.json(await buildAuthResponse(user.id, session.id));
+    res.json(await buildAuthResponse(user.id));
   } catch (error) {
     next(error);
   }
@@ -280,11 +289,11 @@ router.post("/refresh", async (req, res, next) => {
       where: { id: payload.sessionId },
       data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
     });
+    setAuthCookies(res, tokens);
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: payload.sub } });
     await syncCoreUserSafely(user);
     res.json({
-      ...tokens,
       user: serializeUser(user, { friendsCount: await friendsCount(user.id), isOnline: true })
     });
   } catch (error) {
@@ -303,6 +312,7 @@ router.post("/logout", authenticateRequest, async (req: AuthenticatedRequest, re
         revokedAt: new Date()
       }
     });
+    clearAuthCookies(res);
 
     res.json({ success: true });
   } catch (error) {

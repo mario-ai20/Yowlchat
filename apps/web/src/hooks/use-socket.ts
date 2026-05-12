@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { createYowlSocket } from "../lib/socket";
-import { useSessionStore } from "../store/session";
 
 export function useYowlSocket() {
-  const token = useSessionStore((state) => state.accessToken);
   const [status, setStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
 
   useEffect(() => {
-    const socket = createYowlSocket(token);
+    const socket = createYowlSocket();
     if (!socket) {
       setStatus("idle");
       return;
@@ -25,7 +23,7 @@ export function useYowlSocket() {
       socket.removeAllListeners();
       socket.disconnect();
     };
-  }, [token]);
+  }, []);
 
   return { status };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type InputHTMLAttributes } from "react";
+import { useEffect, useMemo, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Camera, KeyRound, Mail, MessageCircleMore, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
 import { APP_NAME } from "@yowl/config";
@@ -8,6 +8,7 @@ import { Badge, Button, Card, Input } from "@yowl/ui";
 import { apiFetch } from "../../lib/api";
 import { useSessionStore } from "../../store/session";
 import { cn } from "../../lib/utils";
+import type { YowlUser } from "@yowl/types";
 
 type AuthMode = "login" | "register" | "forgot";
 type Gender = "man" | "vrouw" | "geen_van_beide";
@@ -34,6 +35,8 @@ function AuthField({
 
 export function AuthScreen({ mode }: { mode: AuthMode }) {
   const router = useRouter();
+  const hydrated = useSessionStore((state) => state.hydrated);
+  const sessionUser = useSessionStore((state) => state.user);
   const setAuth = useSessionStore((state) => state.setAuth);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -92,16 +95,12 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             }
           : { identifier: loginEmail, password: loginPassword };
 
-      const result = await apiFetch<{
-        accessToken: string;
-        refreshToken: string;
-        user: any;
-      }>(route, {
+      const result = await apiFetch<{ user: YowlUser }>(route, {
         method: "POST",
         body: JSON.stringify(payload)
       });
 
-      setAuth(result);
+      setAuth(result.user);
       router.push("/onboarding");
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : "Inloggen is mislukt");
@@ -112,6 +111,12 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
   const isLogin = mode === "login";
   const isRegister = mode === "register";
+
+  useEffect(() => {
+    if (hydrated && sessionUser) {
+      router.push("/");
+    }
+  }, [hydrated, router, sessionUser]);
 
   return (
     <div className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.24),transparent_26%),linear-gradient(180deg,#ffffff_0%,#f8f8f3_100%)] text-slate-950">

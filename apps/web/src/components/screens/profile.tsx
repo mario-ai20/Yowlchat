@@ -157,21 +157,29 @@ export function ProfileScreen() {
 
 export function SettingsScreen() {
   const router = useRouter();
-  const token = useSessionStore((state) => state.accessToken);
+  const sessionUser = useSessionStore((state) => state.user);
+  const updateUser = useSessionStore((state) => state.updateUser);
   const clearAuth = useSessionStore((state) => state.clearAuth);
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return window.localStorage.getItem("yowl-theme") !== "light";
-  });
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [ghostMode, setGhostMode] = useState(false);
-  const [autoSave, setAutoSave] = useState(true);
+  const [darkMode, setDarkMode] = useState(sessionUser?.theme !== "light");
+  const [notificationsEnabled, setNotificationsEnabled] = useState(sessionUser?.pushNotificationsEnabled ?? true);
+  const [ghostMode, setGhostMode] = useState(sessionUser?.isGhostMode ?? false);
+  const [autoSave, setAutoSave] = useState(sessionUser?.autoSaveEchoes ?? true);
 
   useEffect(() => {
-    window.localStorage.setItem("yowl-theme", darkMode ? "dark" : "light");
-    document.documentElement.dataset.yowlTheme = darkMode ? "dark" : "light";
-    document.documentElement.style.colorScheme = darkMode ? "dark" : "light";
-  }, [darkMode]);
+    setDarkMode(sessionUser?.theme !== "light");
+    setNotificationsEnabled(sessionUser?.pushNotificationsEnabled ?? true);
+    setGhostMode(sessionUser?.isGhostMode ?? false);
+    setAutoSave(sessionUser?.autoSaveEchoes ?? true);
+  }, [sessionUser?.autoSaveEchoes, sessionUser?.isGhostMode, sessionUser?.pushNotificationsEnabled, sessionUser?.theme]);
+
+  const saveSetting = async (patch: Record<string, unknown>) => {
+    if (!sessionUser) return;
+    const updated = await apiFetch<YowlUser>("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify(patch)
+    });
+    updateUser(updated);
+  };
 
   const switches = [
     { label: "Dark mode", icon: Moon, value: darkMode, setter: setDarkMode },
@@ -206,9 +214,7 @@ export function SettingsScreen() {
 
   const logout = async () => {
     try {
-      if (token) {
-        await apiFetch("/auth/logout", { method: "POST" });
-      }
+      await apiFetch("/auth/logout", { method: "POST" });
     } finally {
       clearAuth();
       router.push("/login");
@@ -240,7 +246,19 @@ export function SettingsScreen() {
                     </div>
                   </div>
                   <button
-                    onClick={() => item.setter((current) => !current)}
+                    onClick={() => {
+                      const next = !item.value;
+                      item.setter(next);
+                      if (item.label === "Dark mode") {
+                        saveSetting({ theme: next ? "dark" : "light" }).catch(() => undefined);
+                      } else if (item.label === "Push notifications") {
+                        saveSetting({ pushNotificationsEnabled: next }).catch(() => undefined);
+                      } else if (item.label === "Ghost mode") {
+                        saveSetting({ isGhostMode: next }).catch(() => undefined);
+                      } else if (item.label === "Auto save Echoes") {
+                        saveSetting({ autoSaveEchoes: next }).catch(() => undefined);
+                      }
+                    }}
                     className={cn(
                       "relative h-8 w-14 rounded-full border transition",
                       item.value ? "border-[var(--yowl-primary)] bg-[var(--yowl-primary)]/20" : "border-white/10 bg-white/5"

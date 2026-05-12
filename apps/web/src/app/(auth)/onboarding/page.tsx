@@ -19,6 +19,7 @@ function formatGender(gender?: YowlUser["gender"]) {
 export default function Page() {
   const router = useRouter();
   const sessionUser = useSessionStore((state) => state.user);
+  const hydrated = useSessionStore((state) => state.hydrated);
   const updateUser = useSessionStore((state) => state.updateUser);
   const [bio, setBio] = useState(sessionUser?.bio ?? "");
   const [location, setLocation] = useState(sessionUser?.location ?? "");
@@ -28,10 +29,10 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!sessionUser) {
+    if (hydrated && !sessionUser) {
       router.push("/login");
     }
-  }, [router, sessionUser]);
+  }, [hydrated, router, sessionUser]);
 
   const continueFlow = async () => {
     setSaving(true);

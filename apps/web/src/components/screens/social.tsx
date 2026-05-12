@@ -36,8 +36,8 @@ function TitleBlock({ eyebrow, title, description }: { eyebrow: string; title: s
 }
 
 export function FriendsScreen() {
-  const token = useSessionStore((state) => state.accessToken);
   const sessionUser = useSessionStore((state) => state.user);
+  const hydrated = useSessionStore((state) => state.hydrated);
   const [query, setQuery] = useState("");
   const [requestUsername, setRequestUsername] = useState("");
   const [payload, setPayload] = useState<{
@@ -49,7 +49,7 @@ export function FriendsScreen() {
   const [loading, setLoading] = useState(false);
 
   const reload = async () => {
-    if (!token) {
+    if (!hydrated || !sessionUser) {
       setPayload(null);
       return;
     }
@@ -70,7 +70,7 @@ export function FriendsScreen() {
 
   useEffect(() => {
     reload().catch(() => undefined);
-  }, [token]);
+  }, [hydrated, sessionUser]);
 
   const friends = payload?.friends ?? [];
   const filtered = friends.filter((friend) =>
@@ -159,7 +159,7 @@ export function FriendsScreen() {
                 ))
               ) : (
                 <div className="rounded-[24px] border border-dashed border-white/10 bg-white/5 px-4 py-4 text-sm text-white/58">
-                  {token
+                  {hydrated && sessionUser
                     ? "Nog geen echte vrienden gesynchroniseerd. Voeg iemand toe via username."
                     : "Log in om je echte vrienden te zien."}
                 </div>
@@ -262,7 +262,8 @@ export function FriendsScreen() {
 }
 
 export function HowlsScreen() {
-  const token = useSessionStore((state) => state.accessToken);
+  const sessionUser = useSessionStore((state) => state.user);
+  const hydrated = useSessionStore((state) => state.hydrated);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [stories, setStories] = useState<Array<HowlStory & { author?: YowlUser }>>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -272,7 +273,7 @@ export function HowlsScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!token) {
+    if (!hydrated || !sessionUser) {
       setStories([]);
       return;
     }
@@ -280,7 +281,7 @@ export function HowlsScreen() {
     apiFetch<Array<HowlStory & { author?: YowlUser }>>("/howls")
       .then((data) => setStories(data))
       .catch(() => setStories([]));
-  }, [token]);
+  }, [hydrated, sessionUser]);
 
   useEffect(() => {
     if (!stories.length) {
@@ -637,7 +638,8 @@ export function YowlMapScreen() {
 }
 
 export function EchoesScreen() {
-  const token = useSessionStore((state) => state.accessToken);
+  const sessionUser = useSessionStore((state) => state.user);
+  const hydrated = useSessionStore((state) => state.hydrated);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const folders = ["All", "Favorites", "UI", "Launch", "Private"];
   const [activeFolder, setActiveFolder] = useState("All");
@@ -651,7 +653,7 @@ export function EchoesScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!token) {
+    if (!hydrated || !sessionUser) {
       setMemoriesState([]);
       return;
     }
@@ -659,7 +661,7 @@ export function EchoesScreen() {
     apiFetch<EchoMemory[]>("/echoes")
       .then((data) => setMemoriesState(data))
       .catch(() => setMemoriesState([]));
-  }, [token]);
+  }, [hydrated, sessionUser]);
 
   const filtered = memoriesState.filter((item) => {
     const folderMatch = activeFolder === "All" || item.folder === activeFolder;

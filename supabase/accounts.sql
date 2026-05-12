@@ -25,8 +25,11 @@ create table if not exists public."User" (
   "avatarUrl" text,
   "bio" text,
   "location" text,
+  "theme" text not null default 'dark',
   "publicProfile" boolean not null default true,
   "isGhostMode" boolean not null default false,
+  "pushNotificationsEnabled" boolean not null default true,
+  "autoSaveEchoes" boolean not null default true,
   "flames" integer not null default 0,
   "yowlScore" integer not null default 0,
   "lastSeenAt" timestamptz,
@@ -39,7 +42,10 @@ alter table if exists public."User"
   add column if not exists "lastName" text,
   add column if not exists "birthDate" timestamptz,
   add column if not exists "phoneNumber" text,
-  add column if not exists "gender" text;
+  add column if not exists "gender" text,
+  add column if not exists "theme" text not null default 'dark',
+  add column if not exists "pushNotificationsEnabled" boolean not null default true,
+  add column if not exists "autoSaveEchoes" boolean not null default true;
 
 drop trigger if exists set_user_updated_at on public."User";
 create trigger set_user_updated_at

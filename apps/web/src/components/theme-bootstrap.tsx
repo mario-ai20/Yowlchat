@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-
-const THEME_KEY = "yowl-theme";
+import type { YowlUser } from "@yowl/types";
+import { apiFetch } from "../lib/api";
+import { useSessionStore } from "../store/session";
 
 function applyTheme(theme: "light" | "dark") {
   document.documentElement.dataset.yowlTheme = theme;
@@ -11,19 +12,39 @@ function applyTheme(theme: "light" | "dark") {
 }
 
 export function ThemeBootstrap() {
+  const sessionUser = useSessionStore((state) => state.user);
+  const setAuth = useSessionStore((state) => state.setAuth);
+  const clearAuth = useSessionStore((state) => state.clearAuth);
+  const setHydrated = useSessionStore((state) => state.setHydrated);
+
   useEffect(() => {
-    const storedTheme = window.localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
-    applyTheme(storedTheme);
+    applyTheme(sessionUser?.theme ?? "dark");
+  }, [sessionUser?.theme]);
 
-    const onStorage = (event: StorageEvent) => {
-      if (event.key !== THEME_KEY) return;
-      const nextTheme = event.newValue === "light" ? "light" : "dark";
-      applyTheme(nextTheme);
+  useEffect(() => {
+    let cancelled = false;
+
+    apiFetch<{ user: YowlUser }>("/auth/me")
+      .then((response) => {
+        if (!cancelled) {
+          setAuth(response.user);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          clearAuth();
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setHydrated(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
     };
-
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [clearAuth, setAuth, setHydrated]);
 
   return null;
 }

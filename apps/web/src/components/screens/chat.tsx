@@ -30,8 +30,8 @@ function receiptState(message: YowlMessage, userId: string) {
 }
 
 export function ChatScreen() {
-  const token = useSessionStore((state) => state.accessToken);
   const sessionUser = useSessionStore((state) => state.user);
+  const hydrated = useSessionStore((state) => state.hydrated);
   const [selectedChatId, setSelectedChatId] = useState("");
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<YowlMessage | null>(null);
@@ -42,7 +42,7 @@ export function ChatScreen() {
   const { status } = useYowlSocket();
 
   useEffect(() => {
-    if (!token) {
+    if (!hydrated || !sessionUser) {
       setRemoteChats([]);
       setThreads({});
       return;
@@ -65,7 +65,7 @@ export function ChatScreen() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [hydrated, sessionUser]);
 
   useEffect(() => {
     if (!remoteChats.length) {
@@ -84,7 +84,7 @@ export function ChatScreen() {
   );
 
   useEffect(() => {
-    if (!selectedChat?.id || !token || threads[selectedChat.id]) return;
+    if (!selectedChat?.id || !hydrated || !sessionUser || threads[selectedChat.id]) return;
 
     let cancelled = false;
 
@@ -102,7 +102,7 @@ export function ChatScreen() {
     return () => {
       cancelled = true;
     };
-  }, [selectedChat?.id, threads, token]);
+  }, [hydrated, selectedChat?.id, sessionUser, threads]);
 
   const thread = selectedChat ? threads[selectedChat.id] ?? [] : [];
 

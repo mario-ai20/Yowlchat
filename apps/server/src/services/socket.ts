@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { verifyAccessToken } from "../lib/jwt.js";
 import { markOffline, markOnline, touchPresence } from "./presence.js";
 import { coreDb as prisma } from "../lib/db.js";
+import { AUTH_ACCESS_COOKIE, readCookie } from "../lib/cookies.js";
 
 async function isChatParticipant(chatId: string, userId: string) {
   return Boolean(
@@ -21,7 +22,9 @@ export function createSocketServer(httpServer: HttpServer) {
   });
 
   io.use(async (socket, next) => {
-    const token = socket.handshake.auth?.token;
+    const token =
+      socket.handshake.auth?.token ??
+      readCookie(socket.request.headers.cookie, AUTH_ACCESS_COOKIE);
     if (!token) return next();
 
     try {

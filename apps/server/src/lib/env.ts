@@ -4,7 +4,7 @@ import { z } from "zod";
 config();
 
 const schema = z.object({
-  DATABASE_PROVIDER: z.enum(["memory", "split"]).default("memory"),
+  DATABASE_PROVIDER: z.enum(["split"]).default("split"),
   SUPABASE_ACCOUNTS_DATABASE_URL: z.string().optional(),
   SUPABASE_CORE_DATABASE_URL: z.string().optional(),
   SUPABASE_DATABASE_URL: z.string().optional(),

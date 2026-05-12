@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { HttpError } from "../lib/errors.js";
+import { AUTH_ACCESS_COOKIE, readCookie } from "../lib/cookies.js";
 import { verifyAccessToken } from "../lib/jwt.js";
 
 export interface AuthenticatedRequest extends Request {
@@ -11,7 +12,8 @@ export interface AuthenticatedRequest extends Request {
 
 export function authenticateRequest(req: AuthenticatedRequest, _res: Response, next: NextFunction) {
   const header = req.header("authorization");
-  const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
+  const token =
+    header?.startsWith("Bearer ") ? header.slice(7) : readCookie(req.header("cookie"), AUTH_ACCESS_COOKIE);
 
   if (!token) {
     return next(new HttpError(401, "Missing bearer token"));

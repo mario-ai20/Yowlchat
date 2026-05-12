@@ -21,8 +21,11 @@ model User {
   avatarUrl       String?
   bio             String?
   location        String?
+  theme           String           @default("dark")
   publicProfile   Boolean          @default(true)
   isGhostMode     Boolean          @default(false)
+  pushNotificationsEnabled Boolean @default(true)
+  autoSaveEchoes  Boolean          @default(true)
   flames          Int              @default(0)
   yowlScore       Int              @default(0)
   lastSeenAt      DateTime?

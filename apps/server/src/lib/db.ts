@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { env } from "./env.js";
-import { memoryPrisma } from "./memory-db.js";
 
-type DbClient = PrismaClient | typeof memoryPrisma;
+type DbClient = PrismaClient;
 
 declare global {
   // eslint-disable-next-line no-var
@@ -33,7 +32,9 @@ function createClient(kind: "accounts" | "core") {
   const globalKey = kind === "accounts" ? "__yowlAccountsPrisma" : "__yowlCorePrisma";
   const url = resolveUrl(kind);
 
-  if (!url) return memoryPrisma;
+  if (!url) {
+    throw new Error(`${kind} database URL is not configured`);
+  }
 
   const existing = globalThis[globalKey as keyof typeof globalThis] as PrismaClient | undefined;
   if (existing) return existing;
@@ -53,12 +54,12 @@ function createClient(kind: "accounts" | "core") {
 }
 
 export const accountsDb: DbClient =
-  env.DATABASE_PROVIDER === "split" ? createClient("accounts") : memoryPrisma;
+  createClient("accounts");
 
 export const coreDb: DbClient =
-  env.DATABASE_PROVIDER === "split" ? createClient("core") : memoryPrisma;
+  createClient("core");
 
-export const hasAccountsDatabase = env.DATABASE_PROVIDER === "split" && Boolean(resolveUrl("accounts"));
-export const hasCoreDatabase = env.DATABASE_PROVIDER === "split" && Boolean(resolveUrl("core"));
+export const hasAccountsDatabase = Boolean(resolveUrl("accounts"));
+export const hasCoreDatabase = Boolean(resolveUrl("core"));
 
 export const prisma = accountsDb;
