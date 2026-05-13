@@ -28,7 +28,9 @@ const registerSchema = z.object({
   firstName: z.string().min(2).max(40),
   lastName: z.string().min(2).max(40),
   birthDate: z.coerce.date(),
-  phoneNumber: z.string().min(6).max(32),
+  phoneNumber: z
+    .preprocess((value) => (typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined), z.string().min(6).max(32).optional())
+    .optional(),
   gender: z.enum(["man", "vrouw", "geen_van_beide"]),
   locale: z.enum(APP_LOCALE_CODES).default("nl"),
   theme: z.enum(["light", "dark"]).default("dark"),
@@ -207,7 +209,7 @@ router.post("/register", async (req, res, next) => {
       firstName: body.firstName,
       lastName: body.lastName,
       birthDate: body.birthDate,
-      phoneNumber: body.phoneNumber,
+      phoneNumber: body.phoneNumber ?? null,
       gender: body.gender,
       locale: body.locale,
       theme: body.theme,

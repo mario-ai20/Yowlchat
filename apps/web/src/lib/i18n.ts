@@ -38,6 +38,7 @@ type AuthCopy = {
   loginSubtitle: string;
   registerSubtitle: string;
   forgotSubtitle: string;
+  loginIdentifierLabel: string;
   loginIdentifierPlaceholder: string;
   emailLabel: string;
   emailPlaceholder: string;
@@ -124,6 +125,7 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       loginSubtitle: "Gebruik je e-mailadres of gebruikersnaam om verder te gaan.",
       registerSubtitle: "Kies je username en maak je profiel aan. Daarna kun je meteen verder.",
       forgotSubtitle: "Neem contact op met support als je hulp nodig hebt.",
+      loginIdentifierLabel: "E-mailadres of gebruikersnaam",
       loginIdentifierPlaceholder: "jij@voorbeeld.be of je gebruikersnaam",
       emailLabel: "E-mailadres *",
       emailPlaceholder: "jij@voorbeeld.be",
@@ -215,6 +217,7 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       loginSubtitle: "Use your email address or username to continue.",
       registerSubtitle: "Choose your username and set up your profile. Then you can continue right away.",
       forgotSubtitle: "Contact support if you need help.",
+      loginIdentifierLabel: "Email address or username",
       loginIdentifierPlaceholder: "you@example.com or your username",
       emailLabel: "Email address *",
       emailPlaceholder: "you@example.com",
@@ -306,6 +309,7 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       loginSubtitle: "Utilisez votre adresse e-mail ou votre nom d'utilisateur pour continuer.",
       registerSubtitle: "Choisissez votre nom d'utilisateur et créez votre profil. Vous pouvez continuer immédiatement.",
       forgotSubtitle: "Contactez le support si vous avez besoin d'aide.",
+      loginIdentifierLabel: "Adresse e-mail ou nom d'utilisateur",
       loginIdentifierPlaceholder: "vous@exemple.fr ou votre nom d'utilisateur",
       emailLabel: "Adresse e-mail *",
       emailPlaceholder: "vous@exemple.fr",
@@ -397,6 +401,7 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       loginSubtitle: "Verwende deine E-Mail-Adresse oder deinen Benutzernamen, um fortzufahren.",
       registerSubtitle: "Wähle deinen Benutzernamen und richte dein Profil ein. Danach kannst du sofort weitermachen.",
       forgotSubtitle: "Wende dich an den Support, wenn du Hilfe brauchst.",
+      loginIdentifierLabel: "E-Mail-Adresse oder Benutzername",
       loginIdentifierPlaceholder: "du@beispiel.de oder dein Benutzername",
       emailLabel: "E-Mail-Adresse *",
       emailPlaceholder: "du@beispiel.de",
@@ -488,6 +493,7 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       loginSubtitle: "Usa tu correo electrónico o nombre de usuario para continuar.",
       registerSubtitle: "Elige tu nombre de usuario y configura tu perfil. Después puedes seguir al momento.",
       forgotSubtitle: "Contacta con soporte si necesitas ayuda.",
+      loginIdentifierLabel: "Correo electrónico o nombre de usuario",
       loginIdentifierPlaceholder: "tu@ejemplo.es o tu nombre de usuario",
       emailLabel: "Correo electrónico *",
       emailPlaceholder: "tu@ejemplo.es",
@@ -579,6 +585,7 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       loginSubtitle: "Usa il tuo indirizzo email o nome utente per continuare.",
       registerSubtitle: "Scegli il tuo nome utente e configura il profilo. Poi puoi continuare subito.",
       forgotSubtitle: "Contatta il supporto se hai bisogno di aiuto.",
+      loginIdentifierLabel: "Indirizzo email o nome utente",
       loginIdentifierPlaceholder: "tuo@esempio.it o il tuo nome utente",
       emailLabel: "Indirizzo email *",
       emailPlaceholder: "tuo@esempio.it",
@@ -670,6 +677,7 @@ const COPY: Record<AppLocale, { shell: ShellCopy; auth: AuthCopy }> = {
       loginSubtitle: "Usa o teu email ou nome de utilizador para continuar.",
       registerSubtitle: "Escolhe o teu nome de utilizador e prepara o teu perfil. Depois podes avançar logo.",
       forgotSubtitle: "Contacta o suporte se precisares de ajuda.",
+      loginIdentifierLabel: "Endereço de email ou nome de utilizador",
       loginIdentifierPlaceholder: "tu@exemplo.pt ou o teu nome de utilizador",
       emailLabel: "Endereço de email *",
       emailPlaceholder: "tu@exemplo.pt",

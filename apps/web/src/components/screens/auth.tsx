@@ -455,7 +455,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     ) : (
                     <div className="grid gap-4">
                       <AuthField
-                        label={`${copy.emailLabel} of gebruikersnaam`}
+                        label={copy.loginIdentifierLabel}
                         type="text"
                         value={loginEmail}
                         onChange={(event) => setLoginEmail(event.target.value)}
