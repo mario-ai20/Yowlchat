@@ -18,7 +18,10 @@ function resolveUrl(kind: "accounts" | "core") {
       env.SUPABASE_ACCOUNTS_DATABASE_URL ??
         env.SUPABASE_DATABASE_URL ??
         env.ACCOUNTS_DATABASE_URL ??
-        env.DATABASE_URL
+        env.DATABASE_URL ??
+        env.SUPABASE_CORE_DATABASE_URL ??
+        env.CORE_DATABASE_URL ??
+        env.POSTGRES_DATABASE_URL
     );
   }
 
@@ -31,6 +34,9 @@ function createClient(kind: "accounts" | "core") {
   const url = resolveUrl(kind);
 
   if (!url) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(`[db] Missing persistent ${kind} database URL in production`);
+    }
     return memoryPrisma as unknown as PrismaClient;
   }
 
@@ -84,7 +90,13 @@ export const accountsDb: DbClient = createLazyClient("accounts");
 export const coreDb: DbClient = createLazyClient("core");
 
 export const hasAccountsDatabase = isConfiguredDatabaseUrl(
-  env.SUPABASE_ACCOUNTS_DATABASE_URL ?? env.SUPABASE_DATABASE_URL ?? env.ACCOUNTS_DATABASE_URL ?? env.DATABASE_URL
+  env.SUPABASE_ACCOUNTS_DATABASE_URL ??
+    env.SUPABASE_DATABASE_URL ??
+    env.ACCOUNTS_DATABASE_URL ??
+    env.DATABASE_URL ??
+    env.SUPABASE_CORE_DATABASE_URL ??
+    env.CORE_DATABASE_URL ??
+    env.POSTGRES_DATABASE_URL
 );
 export const hasCoreDatabase = isConfiguredDatabaseUrl(
   env.SUPABASE_CORE_DATABASE_URL ?? env.CORE_DATABASE_URL ?? env.POSTGRES_DATABASE_URL ?? env.DATABASE_URL
