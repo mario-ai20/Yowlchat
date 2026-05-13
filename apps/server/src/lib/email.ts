@@ -398,13 +398,13 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
   const restSources = [
     {
       label: "accounts" as const,
-      baseUrl: env.SUPABASE_ACCOUNTS_URL,
-      serviceRoleKey: env.SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY
+      baseUrl: env.SUPABASE_ACCOUNTS_URL ?? env.SUPABASE_URL,
+      serviceRoleKey: env.SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY
     },
     {
       label: "core" as const,
-      baseUrl: env.SUPABASE_CORE_URL,
-      serviceRoleKey: env.SUPABASE_CORE_SERVICE_ROLE_KEY
+      baseUrl: env.SUPABASE_CORE_URL ?? env.SUPABASE_URL,
+      serviceRoleKey: env.SUPABASE_CORE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY
     }
   ];
 

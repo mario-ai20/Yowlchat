@@ -16,6 +16,8 @@ const schema = z.object({
   SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_CORE_URL: z.string().optional(),
   SUPABASE_CORE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("yowl-media"),
   SMTP_URL: z.string().optional(),
   SMTP_HOST: z.string().optional(),

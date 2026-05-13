@@ -30,6 +30,11 @@ If you want the split setup, set:
 - `SUPABASE_CORE_SERVICE_ROLE_KEY=<your Supabase service role key for chats/media>`
 - `SUPABASE_CORE_PUBLISHABLE_KEY=<your Supabase anon/publishable key for chats/media>`
 
+If you only have one Supabase project configured in Vercel, the generic aliases also work:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
 Legacy aliases are also supported:
 
 - `SUPABASE_DATABASE_URL`
