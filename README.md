@@ -25,15 +25,22 @@ If you want the split setup, set:
 - `SUPABASE_CORE_DATABASE_URL=<your Supabase URL for chats/media>`
 - `SUPABASE_ACCOUNTS_URL=<your Supabase project URL for accounts>`
 - `SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY=<your Supabase service role key for accounts>`
+- `SUPABASE_ACCOUNTS_ANON_KEY=<your Supabase anon key for accounts>`
 - `SUPABASE_ACCOUNTS_PUBLISHABLE_KEY=<your Supabase anon/publishable key for accounts>`
 - `SUPABASE_CORE_URL=<your Supabase project URL for chats/media>`
 - `SUPABASE_CORE_SERVICE_ROLE_KEY=<your Supabase service role key for chats/media>`
+- `SUPABASE_CORE_ANON_KEY=<your Supabase anon key for chats/media>`
 - `SUPABASE_CORE_PUBLISHABLE_KEY=<your Supabase anon/publishable key for chats/media>`
 
 If you only have one Supabase project configured in Vercel, the generic aliases also work:
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_ACCOUNT_SUPABASE_URL`
+- `NEXT_PUBLIC_ACCOUNT_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_CHAT_SUPABASE_URL`
+- `NEXT_PUBLIC_CHAT_SUPABASE_ANON_KEY`
 
 Legacy aliases are also supported:
 

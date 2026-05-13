@@ -131,16 +131,16 @@ function createRuntimeConfigFromPayload(
 async function fetchSmtpConfigFromSupabaseRest(
   label: "accounts" | "core",
   baseUrl: string | undefined,
-  serviceRoleKey: string | undefined
+  apiKey: string | undefined
 ): Promise<SmtpRuntimeConfig | null> {
-  if (!baseUrl || !serviceRoleKey) {
+  if (!baseUrl || !apiKey) {
     return null;
   }
 
   const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
   const headers = {
-    apikey: serviceRoleKey,
-    Authorization: `Bearer ${serviceRoleKey}`,
+    apikey: apiKey,
+    Authorization: `Bearer ${apiKey}`,
     Accept: "application/json"
   };
 
@@ -398,19 +398,33 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
   const restSources = [
     {
       label: "accounts" as const,
-      baseUrl: env.SUPABASE_ACCOUNTS_URL ?? env.SUPABASE_URL,
-      serviceRoleKey: env.SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY
+      baseUrl:
+        env.SUPABASE_ACCOUNTS_URL ?? env.NEXT_PUBLIC_ACCOUNT_SUPABASE_URL ?? env.SUPABASE_URL ?? env.NEXT_PUBLIC_CHAT_SUPABASE_URL,
+      apiKey:
+        env.SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY ??
+        env.SUPABASE_ACCOUNTS_ANON_KEY ??
+        env.NEXT_PUBLIC_ACCOUNT_SUPABASE_ANON_KEY ??
+        env.SUPABASE_SERVICE_ROLE_KEY ??
+        env.SUPABASE_ANON_KEY ??
+        env.NEXT_PUBLIC_CHAT_SUPABASE_ANON_KEY
     },
     {
       label: "core" as const,
-      baseUrl: env.SUPABASE_CORE_URL ?? env.SUPABASE_URL,
-      serviceRoleKey: env.SUPABASE_CORE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY
+      baseUrl:
+        env.SUPABASE_CORE_URL ?? env.NEXT_PUBLIC_CHAT_SUPABASE_URL ?? env.SUPABASE_URL ?? env.NEXT_PUBLIC_ACCOUNT_SUPABASE_URL,
+      apiKey:
+        env.SUPABASE_CORE_SERVICE_ROLE_KEY ??
+        env.SUPABASE_CORE_ANON_KEY ??
+        env.NEXT_PUBLIC_CHAT_SUPABASE_ANON_KEY ??
+        env.SUPABASE_SERVICE_ROLE_KEY ??
+        env.SUPABASE_ANON_KEY ??
+        env.NEXT_PUBLIC_ACCOUNT_SUPABASE_ANON_KEY
     }
   ];
 
   for (const source of restSources) {
     try {
-      const config = await fetchSmtpConfigFromSupabaseRest(source.label, source.baseUrl, source.serviceRoleKey);
+      const config = await fetchSmtpConfigFromSupabaseRest(source.label, source.baseUrl, source.apiKey);
       if (config) {
         return config;
       }
