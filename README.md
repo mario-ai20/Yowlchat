@@ -34,6 +34,19 @@ Legacy aliases are also supported:
 - `ACCOUNTS_DATABASE_URL`
 - `POSTGRES_DATABASE_URL`
 
+## Email delivery
+
+YowlChat sends account verification and password reset codes through SMTP. If the SMTP variables are missing, the app will still run in development, but the server will only show preview codes and no real email will be delivered.
+
+Set these variables for production:
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASSWORD`
+- `SMTP_FROM`
+
 ## Vercel deployment
 
 YowlChat can run on Vercel as the web app plus API routes.

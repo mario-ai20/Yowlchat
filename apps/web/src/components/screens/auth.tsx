@@ -81,6 +81,10 @@ function formatAuthError(error: unknown, mode: AuthMode) {
     return "Kies een geldige username.";
   }
 
+  if (lower.includes("e-mailservice niet geconfigureerd")) {
+    return "E-mailservice niet ingesteld. Probeer later opnieuw.";
+  }
+
   return fallback;
 }
 

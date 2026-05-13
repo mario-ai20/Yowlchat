@@ -20,6 +20,9 @@ type UserRecord = BaseRecord & {
   verificationCodeHash: string | null;
   verificationCodeExpiresAt: Date | null;
   verificationCodeSentAt: Date | null;
+  resetCodeHash: string | null;
+  resetCodeExpiresAt: Date | null;
+  resetCodeSentAt: Date | null;
   flames: number;
   yowlScore: number;
   lastSeenAt: Date | null;
@@ -371,6 +374,9 @@ class MemoryPrisma {
         verificationCodeHash: args.data.verificationCodeHash ?? null,
         verificationCodeExpiresAt: args.data.verificationCodeExpiresAt ?? null,
         verificationCodeSentAt: args.data.verificationCodeSentAt ?? null,
+        resetCodeHash: args.data.resetCodeHash ?? null,
+        resetCodeExpiresAt: args.data.resetCodeExpiresAt ?? null,
+        resetCodeSentAt: args.data.resetCodeSentAt ?? null,
         flames: args.data.flames ?? 0,
         yowlScore: args.data.yowlScore ?? 0,
         lastSeenAt: null,

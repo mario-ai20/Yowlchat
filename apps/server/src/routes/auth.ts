@@ -8,7 +8,7 @@ import { clearAuthCookies, getOrCreateDeviceId, setAuthCookies } from "../lib/co
 import { authenticateRequest, type AuthenticatedRequest } from "../middleware/auth.js";
 import { getClientIp } from "../lib/http.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt.js";
-import { sendVerificationEmail } from "../lib/email.js";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import { serializeUser } from "../lib/serializers.js";
 import { APP_LOCALE_CODES, type AppLocale } from "@yowl/types";
 
@@ -49,6 +49,12 @@ const refreshSchema = z.object({
 const verificationSchema = z.object({
   email: z.string().email(),
   code: z.string().min(4).max(12)
+});
+
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  code: z.string().min(4).max(12),
+  password: z.string().min(8).max(128)
 });
 
 const updateMeSchema = z.object({
@@ -119,6 +125,30 @@ async function issueVerificationCode(userId: string, email: string, displayName:
   return { expiresAt, previewCode: delivery.sent ? null : delivery.previewCode ?? code };
 }
 
+async function issuePasswordResetCode(userId: string, email: string, displayName: string) {
+  const code = createVerificationCode();
+  const codeHash = await bcrypt.hash(code, 10);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      resetCodeHash: codeHash,
+      resetCodeExpiresAt: expiresAt,
+      resetCodeSentAt: new Date()
+    }
+  });
+
+  const delivery = await sendPasswordResetEmail({
+    to: email,
+    displayName,
+    code,
+    expiresMinutes: 10
+  });
+
+  return { expiresAt, previewCode: delivery.sent ? null : delivery.previewCode ?? code };
+}
+
 function normalizeAppLocale(locale: string | null | undefined): AppLocale {
   return APP_LOCALE_CODES.includes(locale as AppLocale) ? (locale as AppLocale) : "nl";
 }
@@ -130,6 +160,17 @@ async function clearVerificationCode(userId: string) {
       verificationCodeHash: null,
       verificationCodeExpiresAt: null,
       verificationCodeSentAt: null
+    }
+  });
+}
+
+async function clearPasswordResetCode(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      resetCodeHash: null,
+      resetCodeExpiresAt: null,
+      resetCodeSentAt: null
     }
   });
 }
@@ -275,14 +316,19 @@ router.post("/register", async (req, res, next) => {
       }
     });
 
-    const verification = await issueVerificationCode(user.id, user.email, displayName);
+    try {
+      const verification = await issueVerificationCode(user.id, user.email, displayName);
 
-    res.status(201).json({
-      requiresVerification: true,
-      email: user.email,
-      expiresAt: verification.expiresAt.toISOString(),
-      previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
-    });
+      res.status(201).json({
+        requiresVerification: true,
+        email: user.email,
+        expiresAt: verification.expiresAt.toISOString(),
+        previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
+      });
+    } catch (verificationError) {
+      await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
+      throw verificationError;
+    }
   } catch (error) {
     next(error);
   }
@@ -539,7 +585,64 @@ router.get("/me", authenticateRequest, async (req: AuthenticatedRequest, res, ne
 
 router.post("/forgot-password", async (req, res, next) => {
   try {
-    z.object({ email: z.string().email() }).parse(req.body);
+    const body = z.object({ email: z.string().email() }).parse(req.body);
+    const email = body.email.trim().toLowerCase();
+    const user = await prisma.user.findFirst({ where: { email } });
+
+    if (!user) {
+      throw new HttpError(404, "Account niet gevonden");
+    }
+
+    const reset = await issuePasswordResetCode(user.id, user.email, user.displayName);
+    res.json({
+      sent: true,
+      email: user.email,
+      expiresAt: reset.expiresAt.toISOString(),
+      previewCode: process.env.NODE_ENV !== "production" ? reset.previewCode : undefined
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/reset-password", async (req, res, next) => {
+  try {
+    const body = resetPasswordSchema.parse(req.body);
+    const email = body.email.trim().toLowerCase();
+    const user = await prisma.user.findFirst({ where: { email } });
+
+    if (!user) {
+      throw new HttpError(404, "Account niet gevonden");
+    }
+
+    if (!user.resetCodeHash || !user.resetCodeExpiresAt) {
+      throw new HttpError(400, "Herstelcode ontbreekt");
+    }
+
+    if (user.resetCodeExpiresAt.getTime() < Date.now()) {
+      throw new HttpError(410, "Herstelcode verlopen");
+    }
+
+    const valid = await bcrypt.compare(body.code.trim(), user.resetCodeHash);
+    if (!valid) {
+      throw new HttpError(401, "Ongeldige herstelcode");
+    }
+
+    const passwordHash = await bcrypt.hash(body.password, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash
+      }
+    });
+
+    await prisma.session.updateMany({
+      where: { userId: user.id },
+      data: { revokedAt: new Date() }
+    });
+
+    await clearPasswordResetCode(user.id);
+
     res.json({ ok: true });
   } catch (error) {
     next(error);

@@ -22,6 +22,9 @@ model User {
   verificationCodeHash String?
   verificationCodeExpiresAt DateTime?
   verificationCodeSentAt DateTime?
+  resetCodeHash String?
+  resetCodeExpiresAt DateTime?
+  resetCodeSentAt DateTime?
   avatarUrl       String?
   bio             String?
   location        String?
