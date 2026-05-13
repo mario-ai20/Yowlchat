@@ -5,10 +5,12 @@ import nodemailer from "nodemailer";
 type MailTransporter = {
   sendMail: (options: {
     from: string;
+    replyTo?: string;
     to: string;
     subject: string;
     text: string;
     html: string;
+    envelope?: { from?: string; to?: string | string[] };
   }) => Promise<{
     accepted?: string[];
     rejected?: string[];
@@ -24,6 +26,7 @@ const allowPreviewCode = process.env.NODE_ENV !== "production";
 type SmtpRuntimeConfig = {
   signature: string;
   description: string;
+  user: string;
   transport:
     | string
     | {
@@ -58,8 +61,9 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
     return {
       signature: `env-url:${env.SMTP_URL}`,
       description: "SMTP_URL environment variable",
+      user: payload.user,
       transport: env.SMTP_URL,
-      from: env.SMTP_FROM ?? payload.user ?? "no-reply@yowl.chat"
+      from: env.SMTP_FROM ?? `YowlChat <${payload.user}>`
     };
   }
 
@@ -72,6 +76,7 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
   return {
     signature: `env-host:${env.SMTP_HOST}:${port}:${env.SMTP_SECURE ?? false}:${env.SMTP_USER}:${env.SMTP_FROM ?? ""}`,
     description: `environment SMTP host ${env.SMTP_HOST}:${port}`,
+    user: env.SMTP_USER,
     transport: {
       host: env.SMTP_HOST,
       port,
@@ -81,7 +86,7 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
         pass: env.SMTP_PASSWORD
       }
     },
-    from: env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat"
+    from: env.SMTP_FROM ?? `YowlChat <${env.SMTP_USER}>`
   };
 }
 
@@ -166,6 +171,7 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
       return {
         signature: `db:${record.id}:${record.updatedAt.toISOString()}:${record.host}:${port}:${record.secure}:${record.user}:${record.from ?? ""}`,
         description: `accounts database smtpConfiguration#${record.id}`,
+        user: record.user.trim(),
         transport: {
           host: record.host.trim(),
           port,
@@ -175,7 +181,7 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
             pass: record.password
           }
         },
-        from: record.from?.trim() || record.user.trim()
+        from: record.from?.trim() || `YowlChat <${record.user.trim()}>`
       };
     }
   } catch (error) {
@@ -194,16 +200,10 @@ function maybePreviewCode(code: string) {
   return allowPreviewCode ? code : undefined;
 }
 
-function assertMailDelivery(
-  result: Awaited<ReturnType<MailTransporter["sendMail"]>>,
-  recipient: string,
-  description: string
-) {
-  const accepted = result.accepted ?? [];
+function assertMailDelivery(result: Awaited<ReturnType<MailTransporter["sendMail"]>>, description: string) {
   const rejected = result.rejected ?? [];
-  const delivered = accepted.includes(recipient) || accepted.length > 0 || Boolean(result.response?.trim());
 
-  if (rejected.length > 0 || !delivered) {
+  if (rejected.length > 0) {
     throw new Error(
       `SMTP provider rejected the message via ${description}${rejected.length ? ` (rejected: ${rejected.join(", ")})` : ""}`
     );
@@ -352,13 +352,15 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
   try {
     const info = await mailerHandle.transporter.sendMail({
       from: mailerHandle.config.from,
+      replyTo: mailerHandle.config.user,
       to: options.to,
       subject: "Bevestig je Yowl account",
       text: buildVerificationText(options),
+      envelope: { from: mailerHandle.config.user, to: options.to },
       html: buildVerificationHtml(options)
     });
-    assertMailDelivery(info, options.to, mailerHandle.config.description);
-    console.info("[verification-email] SMTP accepted message for", options.to, "via", mailerHandle.config.description);
+    assertMailDelivery(info, mailerHandle.config.description);
+    console.info("[verification-email] SMTP accepted message for", options.to, "via", mailerHandle.config.description, info.response ?? "");
   } catch (error) {
     console.error(
       "[verification-email] SMTP delivery failed via",
@@ -384,13 +386,15 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
   try {
     const info = await mailerHandle.transporter.sendMail({
       from: mailerHandle.config.from,
+      replyTo: mailerHandle.config.user,
       to: options.to,
       subject: "Reset je Yowl wachtwoord",
       text: buildResetText(options),
+      envelope: { from: mailerHandle.config.user, to: options.to },
       html: buildResetHtml(options)
     });
-    assertMailDelivery(info, options.to, mailerHandle.config.description);
-    console.info("[reset-email] SMTP accepted message for", options.to, "via", mailerHandle.config.description);
+    assertMailDelivery(info, mailerHandle.config.description);
+    console.info("[reset-email] SMTP accepted message for", options.to, "via", mailerHandle.config.description, info.response ?? "");
   } catch (error) {
     console.error(
       "[reset-email] SMTP delivery failed via",
