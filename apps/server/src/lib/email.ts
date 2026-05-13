@@ -1,5 +1,5 @@
 import { env } from "./env.js";
-import { accountsDb, coreDb } from "./db.js";
+import { accountsDb, coreDb, hasAccountsDatabase, hasCoreDatabase } from "./db.js";
 import nodemailer from "nodemailer";
 
 type MailTransporter = {
@@ -22,6 +22,7 @@ type MailTransporter = {
 let transporter: MailTransporter | null = null;
 let transporterSignature: string | null = null;
 const allowPreviewCode = process.env.NODE_ENV !== "production";
+const smtpBootstrap = new Set<string>();
 
 type SmtpRuntimeConfig = {
   signature: string;
@@ -327,6 +328,56 @@ async function seedEnvSmtpConfigIntoDatabase() {
   }
 }
 
+async function ensureSmtpConfigurationTable(
+  label: "accounts" | "core",
+  client: typeof accountsDb | typeof coreDb
+) {
+  if (smtpBootstrap.has(label)) {
+    return;
+  }
+
+  smtpBootstrap.add(label);
+
+  try {
+    await client.$executeRawUnsafe(`
+      create or replace function public.set_updated_at()
+      returns trigger
+      language plpgsql
+      as $$
+      begin
+        new."updatedAt" = now();
+        return new;
+      end;
+      $$;
+    `);
+    await client.$executeRawUnsafe(`
+      create table if not exists public."SmtpConfiguration" (
+        "id" text primary key,
+        "host" text not null,
+        "port" integer not null default 587,
+        "secure" boolean not null default false,
+        "user" text not null,
+        "password" text not null,
+        "from" text,
+        "createdAt" timestamptz not null default now(),
+        "updatedAt" timestamptz not null default now()
+      );
+    `);
+    await client.$executeRawUnsafe(`
+      drop trigger if exists set_smtp_configuration_updated_at on public."SmtpConfiguration";
+      create trigger set_smtp_configuration_updated_at
+      before update on public."SmtpConfiguration"
+      for each row execute function public.set_updated_at();
+    `);
+    console.info(`[mail] Ensured SmtpConfiguration table exists in ${label} database.`);
+  } catch (error) {
+    console.warn(
+      `[mail] Failed to ensure SmtpConfiguration table exists in ${label} database:`,
+      error instanceof Error ? error.message : error
+    );
+  }
+}
+
 type CodeEmailOptions = {
   to: string;
   displayName: string;
@@ -336,6 +387,13 @@ type CodeEmailOptions = {
 
 async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
   try {
+    if (hasAccountsDatabase) {
+      await ensureSmtpConfigurationTable("accounts", accountsDb);
+    }
+    if (hasCoreDatabase) {
+      await ensureSmtpConfigurationTable("core", coreDb);
+    }
+
     const dbSources = [
       { label: "accounts", client: accountsDb },
       { label: "core", client: coreDb }
