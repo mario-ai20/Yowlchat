@@ -322,12 +322,12 @@ router.post("/register", async (req, res, next) => {
       try {
         const verification = await issueVerificationCode(updatedUser.id, updatedUser.email, displayName);
 
-        res.status(201).json({
-          requiresVerification: true,
-          email: updatedUser.email,
-          expiresAt: verification.expiresAt.toISOString(),
-          previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
-        });
+      res.status(201).json({
+        requiresVerification: true,
+        email: updatedUser.email,
+        expiresAt: verification.expiresAt.toISOString(),
+        previewCode: verification.previewCode ?? undefined
+      });
       } catch (verificationError) {
         throw verificationError;
       }
@@ -366,7 +366,7 @@ router.post("/register", async (req, res, next) => {
         requiresVerification: true,
         email: user.email,
         expiresAt: verification.expiresAt.toISOString(),
-        previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
+        previewCode: verification.previewCode ?? undefined
       });
     } catch (verificationError) {
       await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
@@ -451,9 +451,9 @@ router.post("/verification/resend", async (req, res, next) => {
 
     const verification = await issueVerificationCode(user.id, user.email, user.displayName);
     res.json({
-      sent: true,
+      sent: !verification.previewCode,
       expiresAt: verification.expiresAt.toISOString(),
-      previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
+      previewCode: verification.previewCode ?? undefined
     });
   } catch (error) {
     next(error);
@@ -638,10 +638,10 @@ router.post("/forgot-password", async (req, res, next) => {
 
     const reset = await issuePasswordResetCode(user.id, user.email, user.displayName);
     res.json({
-      sent: true,
+      sent: !reset.previewCode,
       email: user.email,
       expiresAt: reset.expiresAt.toISOString(),
-      previewCode: process.env.NODE_ENV !== "production" ? reset.previewCode : undefined
+      previewCode: reset.previewCode ?? undefined
     });
   } catch (error) {
     next(error);

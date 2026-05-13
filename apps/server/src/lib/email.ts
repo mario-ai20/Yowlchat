@@ -1,6 +1,5 @@
 import nodemailer from "nodemailer";
 import { env } from "./env.js";
-import { HttpError } from "./errors.js";
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
@@ -152,11 +151,7 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
 
   if (!mailer) {
     const previewCode = options.code;
-    if (process.env.NODE_ENV === "production") {
-      throw new HttpError(503, "E-mailservice niet geconfigureerd");
-    }
-
-    console.info("[verification-email] SMTP not configured; preview code for", options.to, options.code);
+    console.warn("[verification-email] SMTP not configured; returning preview code for", options.to, options.code);
     return { sent: false as const, previewCode };
   }
 
@@ -176,11 +171,7 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
 
   if (!mailer) {
     const previewCode = options.code;
-    if (process.env.NODE_ENV === "production") {
-      throw new HttpError(503, "E-mailservice niet geconfigureerd");
-    }
-
-    console.info("[reset-email] SMTP not configured; preview code for", options.to, options.code);
+    console.warn("[reset-email] SMTP not configured; returning preview code for", options.to, options.code);
     return { sent: false as const, previewCode };
   }
 
