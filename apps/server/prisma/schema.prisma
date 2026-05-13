@@ -18,6 +18,10 @@ model User {
   gender          String?
   displayName     String
   passwordHash    String
+  emailVerifiedAt DateTime?
+  verificationCodeHash String?
+  verificationCodeExpiresAt DateTime?
+  verificationCodeSentAt DateTime?
   avatarUrl       String?
   bio             String?
   location        String?

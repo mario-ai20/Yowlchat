@@ -16,6 +16,12 @@ import type { AppLocale, YowlUser } from "@yowl/types";
 type AuthMode = "login" | "register" | "forgot";
 type Gender = "man" | "vrouw" | "geen_van_beide";
 type InfoKey = "howls" | "moonlight" | "yowlmap" | "echoes" | "privacy" | "security";
+type RegisterResponse = {
+  requiresVerification: true;
+  email: string;
+  expiresAt: string;
+  previewCode?: string;
+};
 
 function AuthField({
   label,
@@ -59,8 +65,20 @@ function formatAuthError(error: unknown, mode: AuthMode) {
     return "Gebruikersnaam of wachtwoord klopt niet.";
   }
 
+  if (lower.includes("bevestig eerst je e-mailadres")) {
+    return "Bevestig eerst je e-mailadres.";
+  }
+
   if (lower.includes("email or username already in use")) {
     return "Dit account bestaat al.";
+  }
+
+  if (lower.includes("username already in use")) {
+    return "Deze username is al in gebruik.";
+  }
+
+  if (lower.includes("invalid username")) {
+    return "Kies een geldige username.";
   }
 
   return fallback;
@@ -74,6 +92,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
+  const [registerUsername, setRegisterUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -103,28 +122,34 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         return;
       }
 
-      const route = mode === "register" ? "/auth/register" : "/auth/login";
-      const payload =
-        mode === "register"
-          ? {
-              email: registerEmail,
-              firstName,
-              lastName,
-              birthDate,
-              phoneNumber,
-              gender,
-              locale,
-              password: registerPassword
-            }
-          : { identifier: loginEmail, password: loginPassword };
+      if (mode === "register") {
+        const result = await apiFetch<RegisterResponse>("/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            email: registerEmail,
+            username: registerUsername,
+            firstName,
+            lastName,
+            birthDate,
+            phoneNumber,
+            gender,
+            locale,
+            password: registerPassword
+          })
+        });
 
-      const result = await apiFetch<{ user: YowlUser }>(route, {
+        const previewQuery = result.previewCode ? `&preview=${encodeURIComponent(result.previewCode)}` : "";
+        router.push(`/verify-account?email=${encodeURIComponent(result.email)}${previewQuery}`);
+        return;
+      }
+
+      const result = await apiFetch<{ user: YowlUser }>("/auth/login", {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ identifier: loginEmail, password: loginPassword })
       });
 
       let authenticatedUser = result.user;
-      if (mode === "login" && authenticatedUser.locale !== locale) {
+      if (authenticatedUser.locale !== locale) {
         const localeResult = await apiFetch<YowlUser>("/auth/me", {
           method: "PATCH",
           body: JSON.stringify({ locale })
@@ -135,7 +160,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       setAuth(authenticatedUser);
       router.push("/onboarding");
     } catch (authError) {
-      setError(mode === "login" ? "Account niet gevonden" : formatAuthError(authError, mode));
+      setError(mode === "login" ? formatAuthError(authError, mode) : formatAuthError(authError, mode));
     } finally {
       setLoading(false);
     }
@@ -365,6 +390,16 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                         onChange={(event) => setRegisterEmail(event.target.value)}
                         placeholder={copy.emailPlaceholder}
                         autoComplete="email"
+                      />
+                      <AuthField
+                        label={copy.usernameLabel}
+                        value={registerUsername}
+                        onChange={(event) => setRegisterUsername(event.target.value)}
+                        placeholder={copy.usernamePlaceholder}
+                        helper={copy.usernameHelper}
+                        autoComplete="username"
+                        autoCapitalize="none"
+                        spellCheck={false}
                       />
                       <div className="grid gap-4 sm:grid-cols-2">
                         <AuthField

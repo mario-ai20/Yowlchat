@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { randomInt } from "node:crypto";
 import { z } from "zod";
 import { accountsDb as prisma, coreDb as corePrisma } from "../lib/db.js";
 import { HttpError } from "../lib/errors.js";
@@ -7,13 +8,25 @@ import { clearAuthCookies, getOrCreateDeviceId, setAuthCookies } from "../lib/co
 import { authenticateRequest, type AuthenticatedRequest } from "../middleware/auth.js";
 import { getClientIp } from "../lib/http.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt.js";
+import { sendVerificationEmail } from "../lib/email.js";
 import { serializeUser } from "../lib/serializers.js";
 import { APP_LOCALE_CODES, type AppLocale } from "@yowl/types";
 
 const router = Router();
 
+const usernameRegex = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/;
+const usernameSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim().replace(/^@/, "").toLowerCase() : value),
+  z
+    .string()
+    .min(3)
+    .max(24)
+    .regex(usernameRegex, "Invalid username")
+);
+
 const registerSchema = z.object({
   email: z.string().email(),
+  username: usernameSchema,
   firstName: z.string().min(2).max(40),
   lastName: z.string().min(2).max(40),
   birthDate: z.coerce.date(),
@@ -33,8 +46,14 @@ const refreshSchema = z.object({
   refreshToken: z.string().min(1)
 });
 
+const verificationSchema = z.object({
+  email: z.string().email(),
+  code: z.string().min(4).max(12)
+});
+
 const updateMeSchema = z.object({
   displayName: z.string().min(2).max(64).optional(),
+  username: usernameSchema.optional(),
   firstName: z.string().min(2).max(40).nullable().optional(),
   lastName: z.string().min(2).max(40).nullable().optional(),
   birthDate: z.coerce.date().nullable().optional(),
@@ -67,18 +86,52 @@ async function issueTokens(userId: string, sessionId: string) {
   };
 }
 
-function createUsername(firstName: string, lastName: string, email: string) {
-  const seed = `${firstName}.${lastName}`.toLowerCase().replace(/[^a-z0-9.]+/g, "").replace(/\.{2,}/g, ".");
-  const fallback = email.split("@")[0].toLowerCase().replace(/[^a-z0-9.]+/g, "");
-  return (seed || fallback || "yowl").slice(0, 24);
-}
-
 function createDisplayName(firstName: string, lastName: string) {
   return `${firstName.trim()} ${lastName.trim()}`.replace(/\s+/g, " ").trim();
 }
 
+function createVerificationCode() {
+  return String(randomInt(100000, 1000000));
+}
+
+async function issueVerificationCode(userId: string, email: string, displayName: string) {
+  const code = createVerificationCode();
+  const codeHash = await bcrypt.hash(code, 10);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      verificationCodeHash: codeHash,
+      verificationCodeExpiresAt: expiresAt,
+      verificationCodeSentAt: new Date(),
+      emailVerifiedAt: null
+    }
+  });
+
+  const delivery = await sendVerificationEmail({
+    to: email,
+    displayName,
+    code,
+    expiresMinutes: 10
+  });
+
+  return { expiresAt, previewCode: delivery.sent ? null : delivery.previewCode ?? code };
+}
+
 function normalizeAppLocale(locale: string | null | undefined): AppLocale {
   return APP_LOCALE_CODES.includes(locale as AppLocale) ? (locale as AppLocale) : "nl";
+}
+
+async function clearVerificationCode(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      verificationCodeHash: null,
+      verificationCodeExpiresAt: null,
+      verificationCodeSentAt: null
+    }
+  });
 }
 
 async function syncCoreUser(user: {
@@ -175,10 +228,11 @@ async function buildAuthResponse(userId: string) {
 router.post("/register", async (req, res, next) => {
   try {
     const body = registerSchema.parse(req.body);
+    const email = body.email.trim().toLowerCase();
     const displayName = createDisplayName(body.firstName, body.lastName);
     const existingEmail = await prisma.user.findFirst({
       where: {
-        email: body.email
+        email
       }
     });
 
@@ -186,20 +240,21 @@ router.post("/register", async (req, res, next) => {
       throw new HttpError(409, "Email or username already in use");
     }
 
-    const baseUsername = createUsername(body.firstName, body.lastName, body.email);
-    let finalUsername = baseUsername;
-    let suffix = 0;
+    const existingUsername = await prisma.user.findFirst({
+      where: {
+        username: body.username
+      }
+    });
 
-    while (await prisma.user.findFirst({ where: { username: finalUsername } })) {
-      suffix += 1;
-      finalUsername = `${baseUsername.slice(0, Math.max(4, 24 - String(suffix).length - 1))}-${suffix}`;
+    if (existingUsername) {
+      throw new HttpError(409, "Username already in use");
     }
 
     const passwordHash = await bcrypt.hash(body.password, 12);
     const user = await prisma.user.create({
       data: {
-        email: body.email,
-        username: finalUsername,
+        email,
+        username: body.username,
         firstName: body.firstName,
         lastName: body.lastName,
         birthDate: body.birthDate,
@@ -212,41 +267,22 @@ router.post("/register", async (req, res, next) => {
         displayName,
         passwordHash,
         yowlScore: 100,
-        flames: 1
+        flames: 1,
+        emailVerifiedAt: null,
+        verificationCodeHash: null,
+        verificationCodeExpiresAt: null,
+        verificationCodeSentAt: null
       }
     });
 
-    const deviceId = getOrCreateDeviceId(req, res);
-    const session = await prisma.session.upsert({
-      where: {
-        userId_deviceId: {
-          userId: user.id,
-          deviceId
-        }
-      },
-      update: {
-        refreshTokenHash: "",
-        userAgent: req.get("user-agent"),
-        ipAddress: getClientIp(req),
-        revokedAt: null
-      },
-      create: {
-        userId: user.id,
-        deviceId,
-        refreshTokenHash: "",
-        userAgent: req.get("user-agent"),
-        ipAddress: getClientIp(req)
-      }
-    });
+    const verification = await issueVerificationCode(user.id, user.email, displayName);
 
-    const tokens = await issueTokens(user.id, session.id);
-    await prisma.session.update({
-      where: { id: session.id },
-      data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
+    res.status(201).json({
+      requiresVerification: true,
+      email: user.email,
+      expiresAt: verification.expiresAt.toISOString(),
+      previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
     });
-    setAuthCookies(res, tokens);
-
-    res.json(await buildAuthResponse(user.id));
   } catch (error) {
     next(error);
   }
@@ -255,14 +291,19 @@ router.post("/register", async (req, res, next) => {
 router.post("/login", async (req, res, next) => {
   try {
     const body = loginSchema.parse(req.body);
+    const identifier = body.identifier.trim().toLowerCase();
     const user = await prisma.user.findFirst({
       where: {
-        OR: [{ email: body.identifier }, { username: body.identifier }]
+        OR: [{ email: identifier }, { username: identifier }]
       }
     });
 
     if (!user) {
       throw new HttpError(404, "Account niet gevonden");
+    }
+
+    if (!user.emailVerifiedAt) {
+      throw new HttpError(403, "Bevestig eerst je e-mailadres");
     }
 
     const valid = await bcrypt.compare(body.password, user.passwordHash);
@@ -300,6 +341,129 @@ router.post("/login", async (req, res, next) => {
     });
     setAuthCookies(res, tokens);
 
+    res.json(await buildAuthResponse(user.id));
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/verification/resend", async (req, res, next) => {
+  try {
+    const body = verificationSchema.pick({ email: true }).parse(req.body);
+    const user = await prisma.user.findFirst({ where: { email: body.email.trim().toLowerCase() } });
+
+    if (!user) {
+      throw new HttpError(404, "Account niet gevonden");
+    }
+
+    if (user.emailVerifiedAt) {
+      throw new HttpError(409, "Account is al bevestigd");
+    }
+
+    const verification = await issueVerificationCode(user.id, user.email, user.displayName);
+    res.json({
+      sent: true,
+      expiresAt: verification.expiresAt.toISOString(),
+      previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/verification/confirm", async (req, res, next) => {
+  try {
+    const body = verificationSchema.parse(req.body);
+    const user = await prisma.user.findFirst({ where: { email: body.email.trim().toLowerCase() } });
+
+    if (!user) {
+      throw new HttpError(404, "Account niet gevonden");
+    }
+
+    if (user.emailVerifiedAt) {
+      const deviceId = getOrCreateDeviceId(req, res);
+      const session = await prisma.session.upsert({
+        where: {
+          userId_deviceId: {
+            userId: user.id,
+            deviceId
+          }
+        },
+        update: {
+          refreshTokenHash: "",
+          userAgent: req.get("user-agent"),
+          ipAddress: getClientIp(req),
+          revokedAt: null
+        },
+        create: {
+          userId: user.id,
+          deviceId,
+          refreshTokenHash: "",
+          userAgent: req.get("user-agent"),
+          ipAddress: getClientIp(req)
+        }
+      });
+
+      const tokens = await issueTokens(user.id, session.id);
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
+      });
+      setAuthCookies(res, tokens);
+      res.json(await buildAuthResponse(user.id));
+      return;
+    }
+
+    if (!user.verificationCodeHash || !user.verificationCodeExpiresAt) {
+      throw new HttpError(400, "Bevestigingscode ontbreekt");
+    }
+
+    if (user.verificationCodeExpiresAt.getTime() < Date.now()) {
+      throw new HttpError(410, "Bevestigingscode verlopen");
+    }
+
+    const valid = await bcrypt.compare(body.code.trim(), user.verificationCodeHash);
+    if (!valid) {
+      throw new HttpError(401, "Ongeldige bevestigingscode");
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerifiedAt: new Date()
+      }
+    });
+
+    const deviceId = getOrCreateDeviceId(req, res);
+    const session = await prisma.session.upsert({
+      where: {
+        userId_deviceId: {
+          userId: user.id,
+          deviceId
+        }
+      },
+      update: {
+        refreshTokenHash: "",
+        userAgent: req.get("user-agent"),
+        ipAddress: getClientIp(req),
+        revokedAt: null
+      },
+      create: {
+        userId: user.id,
+        deviceId,
+        refreshTokenHash: "",
+        userAgent: req.get("user-agent"),
+        ipAddress: getClientIp(req)
+      }
+    });
+
+    const tokens = await issueTokens(user.id, session.id);
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
+    });
+    setAuthCookies(res, tokens);
+    await clearVerificationCode(user.id);
     res.json(await buildAuthResponse(user.id));
   } catch (error) {
     next(error);
@@ -385,6 +549,18 @@ router.post("/forgot-password", async (req, res, next) => {
 router.patch("/me", authenticateRequest, async (req: AuthenticatedRequest, res, next) => {
   try {
     const body = updateMeSchema.parse(req.body);
+    if (body.username) {
+      const existingUsername = await prisma.user.findFirst({
+        where: {
+          username: body.username
+        }
+      });
+
+      if (existingUsername && existingUsername.id !== req.auth!.userId) {
+        throw new HttpError(409, "Username already in use");
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id: req.auth!.userId },
       data: body

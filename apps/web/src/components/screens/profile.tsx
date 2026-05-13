@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Lock, LogOut, Moon, PencilLine, Shield, Sparkles, UserRound, Zap } from "lucide-react";
+import { Lock, LogOut, Moon, PencilLine, Shield, Sparkles, UserRound, Zap } from "lucide-react";
 import { Badge, Button, Card, GlassPanel, Input, Avatar } from "@yowl/ui";
 import { cn, formatCompactNumber } from "../../lib/utils";
 import { useSessionStore } from "../../store/session";
@@ -25,11 +25,14 @@ export function ProfileScreen() {
   const sessionUser = useSessionStore((state) => state.user);
   const updateUser = useSessionStore((state) => state.updateUser);
   const [bio, setBio] = useState("");
+  const [username, setUsername] = useState("");
   const [visible, setVisible] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setBio(sessionUser?.bio ?? "");
+    setUsername(sessionUser?.username ?? "");
     setVisible(sessionUser?.publicProfile ?? true);
   }, [sessionUser]);
 
@@ -52,16 +55,20 @@ export function ProfileScreen() {
 
   const saveProfile = async () => {
     setSaving(true);
+    setError(null);
     try {
       const updated = await apiFetch<YowlUser>("/auth/me", {
         method: "PATCH",
         body: JSON.stringify({
+          username,
           bio,
           publicProfile: visible
         })
       });
 
       updateUser(updated);
+    } catch (saveError) {
+      setError(saveError instanceof Error && saveError.message.toLowerCase().includes("username already in use") ? "Deze username is al in gebruik." : "Sla je profiel opnieuw op.");
     } finally {
       setSaving(false);
     }
@@ -84,6 +91,8 @@ export function ProfileScreen() {
           </Button>
         </div>
 
+        {error ? <div className="mt-4 rounded-[18px] border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div> : null}
+
         <div className="mt-6 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
           <Card className="border-white/8 bg-white/[0.04]">
             <div className="flex flex-col items-center text-center">
@@ -91,7 +100,20 @@ export function ProfileScreen() {
                 <Avatar name={sessionUser.displayName} className="h-24 w-24" />
               </div>
               <h3 className="mt-4 text-2xl font-semibold">{sessionUser.displayName}</h3>
-              <p className="mt-1 text-white/52">@{sessionUser.username}</p>
+              <div className="mt-4 w-full space-y-2 text-left">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/38">Username</p>
+                <Input
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  className="border-white/8 bg-white/5 text-center text-base font-semibold"
+                  placeholder="jouw.username"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                />
+                <p className="text-center text-xs text-white/45">Mensen kunnen je hiermee zoeken en toevoegen.</p>
+              </div>
+              <p className="mt-1 text-white/52">@{username || sessionUser.username}</p>
               <p className="mt-3 text-sm text-white/62">{sessionUser.bio ?? "No bio yet."}</p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Badge>{sessionUser.location ?? "No location"}</Badge>

@@ -16,6 +16,10 @@ type UserRecord = BaseRecord & {
   locale: string;
   publicProfile: boolean;
   isGhostMode: boolean;
+  emailVerifiedAt: Date | null;
+  verificationCodeHash: string | null;
+  verificationCodeExpiresAt: Date | null;
+  verificationCodeSentAt: Date | null;
   flames: number;
   yowlScore: number;
   lastSeenAt: Date | null;
@@ -363,6 +367,10 @@ class MemoryPrisma {
         locale: args.data.locale ?? "nl",
         publicProfile: args.data.publicProfile ?? true,
         isGhostMode: args.data.isGhostMode ?? false,
+        emailVerifiedAt: args.data.emailVerifiedAt ?? null,
+        verificationCodeHash: args.data.verificationCodeHash ?? null,
+        verificationCodeExpiresAt: args.data.verificationCodeExpiresAt ?? null,
+        verificationCodeSentAt: args.data.verificationCodeSentAt ?? null,
         flames: args.data.flames ?? 0,
         yowlScore: args.data.yowlScore ?? 0,
         lastSeenAt: null,
