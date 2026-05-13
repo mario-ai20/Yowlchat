@@ -33,13 +33,28 @@ type SmtpRuntimeConfig = {
   from: string;
 };
 
+type SmtpDatabasePayload = {
+  id: "primary";
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  password: string;
+  from: string | null;
+};
+
 function buildEnvConfig(): SmtpRuntimeConfig | null {
   if (env.SMTP_URL) {
+    const payload = envSmtpDatabasePayload();
+    if (!payload) {
+      return null;
+    }
+
     return {
       signature: `env-url:${env.SMTP_URL}`,
       description: "SMTP_URL environment variable",
       transport: env.SMTP_URL,
-      from: env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat"
+      from: env.SMTP_FROM ?? payload.user ?? "no-reply@yowl.chat"
     };
   }
 
@@ -63,6 +78,70 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
     },
     from: env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat"
   };
+}
+
+function envSmtpDatabasePayload(): SmtpDatabasePayload | null {
+  if (env.SMTP_URL) {
+    const url = new URL(env.SMTP_URL);
+    const port = url.port ? Number(url.port) : url.protocol === "smtps:" ? 465 : 587;
+    const secure = url.protocol === "smtps:" || port === 465;
+    const user = decodeURIComponent(url.username || env.SMTP_USER || "");
+    const password = decodeURIComponent(url.password || env.SMTP_PASSWORD || "");
+    const host = url.hostname.trim();
+
+    if (!host || !user || !password) {
+      return null;
+    }
+
+    return {
+      id: "primary",
+      host,
+      port,
+      secure,
+      user,
+      password,
+      from: env.SMTP_FROM?.trim() || user
+    };
+  }
+
+  if (!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD)) {
+    return null;
+  }
+
+  return {
+    id: "primary",
+    host: env.SMTP_HOST.trim(),
+    port: env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587),
+    secure: env.SMTP_SECURE ?? false,
+    user: env.SMTP_USER.trim(),
+    password: env.SMTP_PASSWORD,
+    from: env.SMTP_FROM?.trim() || env.SMTP_USER.trim()
+  };
+}
+
+async function seedEnvSmtpConfigIntoDatabase() {
+  const payload = envSmtpDatabasePayload();
+  if (!payload) {
+    return;
+  }
+
+  try {
+    await accountsDb.smtpConfiguration.upsert({
+      where: { id: payload.id },
+      create: payload,
+      update: {
+        host: payload.host,
+        port: payload.port,
+        secure: payload.secure,
+        user: payload.user,
+        password: payload.password,
+        from: payload.from
+      }
+    });
+    console.info("[mail] Seeded SMTP config into accounts database from environment.");
+  } catch (error) {
+    console.warn("[mail] Failed to seed SMTP config into accounts database:", error instanceof Error ? error.message : error);
+  }
 }
 
 type CodeEmailOptions = {
@@ -98,7 +177,12 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
     console.warn("[mail] Failed to read SMTP config from accounts database:", error instanceof Error ? error.message : error);
   }
 
-  return buildEnvConfig();
+  const envConfig = buildEnvConfig();
+  if (envConfig) {
+    await seedEnvSmtpConfigIntoDatabase();
+  }
+
+  return envConfig;
 }
 
 function maybePreviewCode(code: string) {
