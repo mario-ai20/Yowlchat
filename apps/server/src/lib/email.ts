@@ -30,6 +30,13 @@ type SmtpRuntimeConfig = {
   transport:
     | string
     | {
+        service: string;
+        auth: {
+          user: string;
+          pass: string;
+        };
+      }
+    | {
         host: string;
         port: number;
         secure: boolean;
@@ -58,11 +65,21 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
       return null;
     }
 
+    const isGmail = payload.host.includes("gmail.com") || payload.user.endsWith("@gmail.com");
+
     return {
       signature: `env-url:${env.SMTP_URL}`,
       description: "SMTP_URL environment variable",
       user: payload.user,
-      transport: env.SMTP_URL,
+      transport: isGmail
+        ? {
+            service: "gmail",
+            auth: {
+              user: payload.user,
+              pass: payload.password
+            }
+          }
+        : env.SMTP_URL,
       from: payload.user
     };
   }
@@ -72,20 +89,29 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
   }
 
   const port = env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587);
+  const isGmail = env.SMTP_HOST.includes("gmail.com") || env.SMTP_USER.endsWith("@gmail.com");
 
   return {
     signature: `env-host:${env.SMTP_HOST}:${port}:${env.SMTP_SECURE ?? false}:${env.SMTP_USER}:${env.SMTP_FROM ?? ""}`,
     description: `environment SMTP host ${env.SMTP_HOST}:${port}`,
     user: env.SMTP_USER,
-    transport: {
-      host: env.SMTP_HOST,
-      port,
-      secure: env.SMTP_SECURE ?? false,
-      auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASSWORD
-      }
-    },
+    transport: isGmail
+      ? {
+          service: "gmail",
+          auth: {
+            user: env.SMTP_USER,
+            pass: env.SMTP_PASSWORD
+          }
+        }
+      : {
+          host: env.SMTP_HOST,
+          port,
+          secure: env.SMTP_SECURE ?? false,
+          auth: {
+            user: env.SMTP_USER,
+            pass: env.SMTP_PASSWORD
+          }
+        },
     from: env.SMTP_USER
   };
 }
@@ -167,21 +193,32 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
 
     if (record && record.host.trim() && record.user.trim() && record.password) {
       const port = record.port ?? (record.secure ? 465 : 587);
+      const host = record.host.trim();
+      const user = record.user.trim();
+      const isGmail = host.includes("gmail.com") || user.endsWith("@gmail.com");
 
       return {
         signature: `db:${record.id}:${record.updatedAt.toISOString()}:${record.host}:${port}:${record.secure}:${record.user}:${record.from ?? ""}`,
         description: `accounts database smtpConfiguration#${record.id}`,
-        user: record.user.trim(),
-        transport: {
-          host: record.host.trim(),
-          port,
-          secure: record.secure,
-          auth: {
-            user: record.user.trim(),
-            pass: record.password
-          }
-        },
-        from: record.user.trim()
+        user,
+        transport: isGmail
+          ? {
+              service: "gmail",
+              auth: {
+                user,
+                pass: record.password
+              }
+            }
+          : {
+              host,
+              port,
+              secure: record.secure || port === 465,
+              auth: {
+                user,
+                pass: record.password
+              }
+            },
+        from: user
       };
     }
   } catch (error) {
