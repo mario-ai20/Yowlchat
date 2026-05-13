@@ -277,21 +277,64 @@ router.post("/register", async (req, res, next) => {
       }
     });
 
-    if (existingEmail) {
-      throw new HttpError(409, "Email or username already in use");
-    }
-
     const existingUsername = await prisma.user.findFirst({
       where: {
         username: body.username
       }
     });
 
-    if (existingUsername) {
+    if (existingUsername && existingUsername.id !== existingEmail?.id) {
       throw new HttpError(409, "Username already in use");
     }
 
     const passwordHash = await bcrypt.hash(body.password, 12);
+
+    if (existingEmail) {
+      if (existingEmail.emailVerifiedAt) {
+        throw new HttpError(409, "Email or username already in use");
+      }
+
+      const updatedUser = await prisma.user.update({
+        where: { id: existingEmail.id },
+        data: {
+          username: body.username,
+          firstName: body.firstName,
+          lastName: body.lastName,
+          birthDate: body.birthDate,
+          phoneNumber: body.phoneNumber,
+          gender: body.gender,
+          locale: body.locale,
+          theme: body.theme,
+          displayName,
+          passwordHash,
+          emailVerifiedAt: null,
+          verificationCodeHash: null,
+          verificationCodeExpiresAt: null,
+          verificationCodeSentAt: null,
+          resetCodeHash: null,
+          resetCodeExpiresAt: null,
+          resetCodeSentAt: null,
+          yowlScore: 100,
+          flames: 1
+        }
+      });
+
+      try {
+        const verification = await issueVerificationCode(updatedUser.id, updatedUser.email, displayName);
+
+        res.status(201).json({
+          requiresVerification: true,
+          email: updatedUser.email,
+          expiresAt: verification.expiresAt.toISOString(),
+          previewCode: process.env.NODE_ENV !== "production" ? verification.previewCode : undefined
+        });
+      } catch (verificationError) {
+        throw verificationError;
+      }
+
+      return;
+    }
+
     const user = await prisma.user.create({
       data: {
         email,
@@ -349,7 +392,7 @@ router.post("/login", async (req, res, next) => {
     }
 
     if (!user.emailVerifiedAt) {
-      throw new HttpError(403, "Bevestig eerst je e-mailadres");
+      throw new HttpError(403, "Account niet bevestigd");
     }
 
     const valid = await bcrypt.compare(body.password, user.passwordHash);

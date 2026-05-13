@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
 import { APP_NAME, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
-import { apiFetch } from "../../lib/api";
+import { ApiError, apiFetch } from "../../lib/api";
 import { getUiCopy } from "../../lib/i18n";
 import { applyLocale, getPreferredLocale, setStoredLocale } from "../../lib/locale";
 import { useSessionStore } from "../../store/session";
@@ -21,6 +21,10 @@ type RegisterResponse = {
   email: string;
   expiresAt: string;
   previewCode?: string;
+};
+
+type LoginResponse = {
+  user: YowlUser;
 };
 
 function AuthField({
@@ -66,6 +70,10 @@ function formatAuthError(error: unknown, mode: AuthMode) {
   }
 
   if (lower.includes("bevestig eerst je e-mailadres")) {
+    return "Bevestig eerst je e-mailadres.";
+  }
+
+  if (lower.includes("account niet bevestigd")) {
     return "Bevestig eerst je e-mailadres.";
   }
 
@@ -147,7 +155,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         return;
       }
 
-      const result = await apiFetch<{ user: YowlUser }>("/auth/login", {
+      const result = await apiFetch<LoginResponse>("/auth/login", {
         method: "POST",
         body: JSON.stringify({ identifier: loginEmail, password: loginPassword })
       });
@@ -164,6 +172,14 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       setAuth(authenticatedUser);
       router.push("/onboarding");
     } catch (authError) {
+      if (mode === "login" && authError instanceof ApiError && authError.status === 403) {
+        const message = authError.message.toLowerCase();
+        if (message.includes("bevestig") || message.includes("verifi") || message.includes("confirm")) {
+          router.push(`/verify-account?email=${encodeURIComponent(loginEmail.trim())}`);
+          return;
+        }
+      }
+
       setError(mode === "login" ? formatAuthError(authError, mode) : formatAuthError(authError, mode));
     } finally {
       setLoading(false);

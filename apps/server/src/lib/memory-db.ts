@@ -402,6 +402,12 @@ class MemoryPrisma {
       Object.assign(record, args.data);
       this.touch(record);
       return clone(record);
+    },
+    delete: async (args: any) => {
+      const index = this.seed.users.findIndex((entry) => entry.id === args.where.id);
+      if (index === -1) throw new Error("User not found");
+      const [deleted] = this.seed.users.splice(index, 1);
+      return clone(deleted);
     }
   };
 
