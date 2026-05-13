@@ -19,12 +19,6 @@ model User {
   displayName     String
   passwordHash    String
   emailVerifiedAt DateTime?
-  verificationCodeHash String?
-  verificationCodeExpiresAt DateTime?
-  verificationCodeSentAt DateTime?
-  resetCodeHash String?
-  resetCodeExpiresAt DateTime?
-  resetCodeSentAt DateTime?
   avatarUrl       String?
   bio             String?
   location        String?
@@ -54,18 +48,6 @@ model User {
   reactions       Reaction[]
   storyViews      StoryView[]
   locationPings   LocationPing[]
-}
-
-model SmtpConfiguration {
-  id        String   @id
-  host      String
-  port      Int      @default(587)
-  secure    Boolean  @default(false)
-  user      String
-  password  String
-  from      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model Session {

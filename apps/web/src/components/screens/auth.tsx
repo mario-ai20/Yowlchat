@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState, type InputHTMLAttributes } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Camera, KeyRound, Mail, MapPin, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
+import { ArrowRight, Camera, KeyRound, MapPin, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
 import { APP_NAME, BRAND_TERMS } from "@yowl/config";
 import { Badge, Button, Card, Input } from "@yowl/ui";
-import { ApiError, apiFetch } from "../../lib/api";
+import { apiFetch } from "../../lib/api";
 import { getUiCopy } from "../../lib/i18n";
 import { applyLocale, getPreferredLocale, setStoredLocale } from "../../lib/locale";
 import { useSessionStore } from "../../store/session";
@@ -13,24 +13,11 @@ import { LocalePicker } from "../locale-picker";
 import { BrandLogo } from "../brand-logo";
 import type { AppLocale, YowlUser } from "@yowl/types";
 
-type AuthMode = "login" | "register" | "forgot";
+type AuthMode = "login" | "register";
 type Gender = "man" | "vrouw" | "geen_van_beide";
 type InfoKey = "howls" | "moonlight" | "yowlmap" | "echoes" | "privacy" | "security";
-type RegisterResponse = {
-  requiresVerification: true;
-  email: string;
-  expiresAt: string;
-  previewCode?: string;
-};
-
 type LoginResponse = {
   user: YowlUser;
-};
-
-type ResendResponse = {
-  sent: boolean;
-  expiresAt: string;
-  previewCode?: string;
 };
 
 function AuthField({
@@ -53,8 +40,8 @@ function AuthField({
   );
 }
 
-function formatAuthError(error: unknown, mode: AuthMode) {
-  const fallback = mode === "forgot" ? "Controleer het e-mailadres en probeer opnieuw." : "Controleer je invoer en probeer opnieuw.";
+function formatAuthError(error: unknown) {
+  const fallback = "Controleer je invoer en probeer opnieuw.";
 
   if (!(error instanceof Error)) {
     return fallback;
@@ -75,14 +62,6 @@ function formatAuthError(error: unknown, mode: AuthMode) {
     return "Gebruikersnaam of wachtwoord klopt niet.";
   }
 
-  if (lower.includes("bevestig eerst je e-mailadres")) {
-    return "Bevestig eerst je e-mailadres.";
-  }
-
-  if (lower.includes("account niet bevestigd")) {
-    return "Bevestig eerst je e-mailadres.";
-  }
-
   if (lower.includes("email or username already in use")) {
     return "Dit account bestaat al.";
   }
@@ -93,10 +72,6 @@ function formatAuthError(error: unknown, mode: AuthMode) {
 
   if (lower.includes("invalid username")) {
     return "Kies een geldige username.";
-  }
-
-  if (lower.includes("e-mail versturen mislukt") || lower.includes("smtp")) {
-    return "We konden de e-mail niet versturen. Probeer het opnieuw.";
   }
 
   return fallback;
@@ -117,31 +92,21 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [gender, setGender] = useState<Gender>("geen_van_beide");
   const [registerPassword, setRegisterPassword] = useState("");
-  const [resetEmail, setResetEmail] = useState("");
   const [locale, setLocale] = useState<AppLocale>(() => getPreferredLocale());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeInfo, setActiveInfo] = useState<InfoKey | null>(null);
   const copy = getUiCopy(locale).auth;
-  const title = mode === "register" ? copy.registerTitle : mode === "forgot" ? copy.forgotTitle : copy.loginTitle;
-  const subtitle = mode === "register" ? copy.registerSubtitle : mode === "forgot" ? copy.forgotSubtitle : copy.loginSubtitle;
+  const title = mode === "register" ? copy.registerTitle : copy.loginTitle;
+  const subtitle = mode === "register" ? copy.registerSubtitle : copy.loginSubtitle;
 
   const submit = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      if (mode === "forgot") {
-        await apiFetch("/auth/forgot-password", {
-          method: "POST",
-          body: JSON.stringify({ email: resetEmail })
-        });
-        router.push("/login?reset=sent");
-        return;
-      }
-
       if (mode === "register") {
-        const result = await apiFetch<RegisterResponse>("/auth/register", {
+        const result = await apiFetch<LoginResponse>("/auth/register", {
           method: "POST",
           body: JSON.stringify({
             email: registerEmail,
@@ -156,8 +121,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
           })
         });
 
-        const previewQuery = result.previewCode ? `&preview=${encodeURIComponent(result.previewCode)}` : "";
-        router.push(`/verify-account?email=${encodeURIComponent(result.email)}${previewQuery}`);
+        setAuth(result.user);
+        router.push("/onboarding");
         return;
       }
 
@@ -178,34 +143,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       setAuth(authenticatedUser);
       router.push("/onboarding");
     } catch (authError) {
-      if (mode === "register" && authError instanceof ApiError && authError.status === 409) {
-        try {
-          const resend = await apiFetch<ResendResponse>("/auth/verification/resend", {
-            method: "POST",
-            body: JSON.stringify({ email: registerEmail.trim() })
-          });
-
-          const previewQuery = resend.previewCode ? `&preview=${encodeURIComponent(resend.previewCode)}` : "";
-          router.push(`/verify-account?email=${encodeURIComponent(registerEmail.trim())}${previewQuery}`);
-          return;
-        } catch (resendError) {
-          const resendMessage = resendError instanceof Error ? resendError.message.toLowerCase() : "";
-          if (resendMessage.includes("al bevestigd") || resendMessage.includes("already confirmed")) {
-            setError("Dit e-mailadres heeft al een account. Log in of gebruik een ander e-mailadres.");
-            return;
-          }
-        }
-      }
-
-      if (mode === "login" && authError instanceof ApiError && authError.status === 403) {
-        const message = authError.message.toLowerCase();
-        if (message.includes("bevestig") || message.includes("verifi") || message.includes("confirm")) {
-          router.push(`/verify-account?email=${encodeURIComponent(loginEmail.trim())}`);
-          return;
-        }
-      }
-
-      setError(mode === "login" ? formatAuthError(authError, mode) : formatAuthError(authError, mode));
+      setError(formatAuthError(authError));
     } finally {
       setLoading(false);
     }
@@ -514,7 +452,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                         autoComplete="new-password"
                       />
                     </div>
-                  ) : isLogin ? (
+                    ) : (
                     <div className="grid gap-4">
                       <AuthField
                         label={`${copy.emailLabel} of gebruikersnaam`}
@@ -534,22 +472,11 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       />
                       <button
                         type="button"
-                        onClick={() => router.push("/forgot-password")}
+                        onClick={() => window.open("mailto:yowl.maffia@gmail.com?subject=YowlChat%20support", "_blank")}
                         className="text-left text-sm font-semibold text-white/60 transition hover:text-white"
                       >
                         {copy.forgotPassword}
                       </button>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4">
-                      <AuthField
-                        label={copy.emailLabel}
-                        type="email"
-                        value={resetEmail}
-                        onChange={(event) => setResetEmail(event.target.value)}
-                        placeholder={copy.emailPlaceholder}
-                        autoComplete="email"
-                      />
                     </div>
                   )}
 
@@ -570,11 +497,6 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                       <>
                         <UserPlus className="h-4 w-4" />
                         {copy.submitRegister}
-                      </>
-                    ) : mode === "forgot" ? (
-                      <>
-                        <Mail className="h-4 w-4" />
-                        {copy.submitForgot}
                       </>
                     ) : (
                       <>

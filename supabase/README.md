@@ -9,14 +9,12 @@ You need two separate Supabase projects:
 
 1. Open the Supabase SQL editor for the accounts project.
 2. Paste and run [`accounts.sql`](./accounts.sql).
-3. That file now also creates the `SmtpConfiguration` table used by Yowl email delivery.
 
 ## Run in the core project
 
 1. Open the Supabase SQL editor for the core project.
 2. Paste and run [`core.sql`](./core.sql).
 3. Paste and run [`storage.sql`](./storage.sql).
-4. That file now also creates the `SmtpConfiguration` table used by Yowl email delivery if you keep SMTP config in the core project.
 
 ## Environment values
 

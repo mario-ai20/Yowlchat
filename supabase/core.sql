@@ -15,23 +15,6 @@ begin
 end;
 $$;
 
-create table if not exists public."SmtpConfiguration" (
-  "id" text primary key,
-  "host" text not null,
-  "port" integer not null default 587,
-  "secure" boolean not null default false,
-  "user" text not null,
-  "password" text not null,
-  "from" text,
-  "createdAt" timestamptz not null default now(),
-  "updatedAt" timestamptz not null default now()
-);
-
-drop trigger if exists set_smtp_configuration_updated_at on public."SmtpConfiguration";
-create trigger set_smtp_configuration_updated_at
-before update on public."SmtpConfiguration"
-for each row execute function public.set_updated_at();
-
 create table if not exists public."User" (
   "id" text primary key,
   "email" text not null unique,

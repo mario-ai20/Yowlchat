@@ -1,5 +1,5 @@
-import { AuthScreen } from "../../../components/screens/auth";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <AuthScreen mode="forgot" />;
+  redirect("/login");
 }

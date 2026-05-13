@@ -1,5 +1,5 @@
-import { VerifyAccountScreen } from "../../../components/screens/verify-account";
+import { redirect } from "next/navigation";
 
 export default function VerifyAccountPage() {
-  return <VerifyAccountScreen />;
+  redirect("/login");
 }

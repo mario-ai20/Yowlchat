@@ -1,6 +1,5 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { randomInt } from "node:crypto";
 import { z } from "zod";
 import { accountsDb as prisma, coreDb as corePrisma } from "../lib/db.js";
 import { HttpError } from "../lib/errors.js";
@@ -8,12 +7,10 @@ import { clearAuthCookies, getOrCreateDeviceId, setAuthCookies } from "../lib/co
 import { authenticateRequest, type AuthenticatedRequest } from "../middleware/auth.js";
 import { getClientIp } from "../lib/http.js";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt.js";
-import { sendPasswordResetEmail, sendVerificationEmail } from "../lib/email.js";
 import { serializeUser } from "../lib/serializers.js";
 import { APP_LOCALE_CODES, type AppLocale } from "@yowl/types";
 
 const router = Router();
-const allowPreviewCode = process.env.NODE_ENV !== "production";
 
 const usernameRegex = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/;
 const usernameSchema = z.preprocess(
@@ -97,131 +94,8 @@ function createDisplayName(firstName: string, lastName: string) {
   return `${firstName.trim()} ${lastName.trim()}`.replace(/\s+/g, " ").trim();
 }
 
-function createVerificationCode() {
-  return String(randomInt(100000, 1000000));
-}
-
-async function issueVerificationCode(userId: string, email: string, displayName: string) {
-  const code = createVerificationCode();
-  const codeHash = await bcrypt.hash(code, 10);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      verificationCodeHash: codeHash,
-      verificationCodeExpiresAt: expiresAt,
-      verificationCodeSentAt: new Date(),
-      emailVerifiedAt: null
-    }
-  });
-
-  const delivery = await sendVerificationEmail({
-    to: email,
-    displayName,
-    code,
-    expiresMinutes: 10
-  });
-
-  return { expiresAt, sent: delivery.sent, previewCode: delivery.previewCode ?? null };
-}
-
-async function issuePasswordResetCode(userId: string, email: string, displayName: string) {
-  const code = createVerificationCode();
-  const codeHash = await bcrypt.hash(code, 10);
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      resetCodeHash: codeHash,
-      resetCodeExpiresAt: expiresAt,
-      resetCodeSentAt: new Date()
-    }
-  });
-
-  const delivery = await sendPasswordResetEmail({
-    to: email,
-    displayName,
-    code,
-    expiresMinutes: 10
-  });
-
-  return { expiresAt, sent: delivery.sent, previewCode: delivery.previewCode ?? null };
-}
-
-async function restoreRegistrationSnapshot(user: {
-  id: string;
-  username: string;
-  firstName: string | null;
-  lastName: string | null;
-  birthDate: Date | null;
-  phoneNumber: string | null;
-  gender: string | null;
-  locale: string;
-  theme: string;
-  displayName: string;
-  passwordHash: string;
-  emailVerifiedAt: Date | null;
-  verificationCodeHash: string | null;
-  verificationCodeExpiresAt: Date | null;
-  verificationCodeSentAt: Date | null;
-  resetCodeHash: string | null;
-  resetCodeExpiresAt: Date | null;
-  resetCodeSentAt: Date | null;
-  yowlScore: number;
-  flames: number;
-}) {
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      birthDate: user.birthDate,
-      phoneNumber: user.phoneNumber,
-      gender: user.gender,
-      locale: user.locale,
-      theme: user.theme,
-      displayName: user.displayName,
-      passwordHash: user.passwordHash,
-      emailVerifiedAt: user.emailVerifiedAt,
-      verificationCodeHash: user.verificationCodeHash,
-      verificationCodeExpiresAt: user.verificationCodeExpiresAt,
-      verificationCodeSentAt: user.verificationCodeSentAt,
-      resetCodeHash: user.resetCodeHash,
-      resetCodeExpiresAt: user.resetCodeExpiresAt,
-      resetCodeSentAt: user.resetCodeSentAt,
-      yowlScore: user.yowlScore,
-      flames: user.flames
-    }
-  });
-}
-
 function normalizeAppLocale(locale: string | null | undefined): AppLocale {
   return APP_LOCALE_CODES.includes(locale as AppLocale) ? (locale as AppLocale) : "nl";
-}
-
-async function clearVerificationCode(userId: string) {
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      verificationCodeHash: null,
-      verificationCodeExpiresAt: null,
-      verificationCodeSentAt: null
-    }
-  });
-}
-
-async function clearPasswordResetCode(userId: string) {
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      resetCodeHash: null,
-      resetCodeExpiresAt: null,
-      resetCodeSentAt: null
-    }
-  });
 }
 
 async function syncCoreUser(user: {
@@ -337,100 +211,71 @@ router.post("/register", async (req, res, next) => {
     }
 
     const passwordHash = await bcrypt.hash(body.password, 12);
+    const userData = {
+      email,
+      username: body.username,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      birthDate: body.birthDate,
+      phoneNumber: body.phoneNumber,
+      gender: body.gender,
+      locale: body.locale,
+      theme: body.theme,
+      pushNotificationsEnabled: true,
+      autoSaveEchoes: true,
+      displayName,
+      passwordHash,
+      yowlScore: 100,
+      flames: 1,
+      emailVerifiedAt: new Date()
+    };
 
-    if (existingEmail) {
-      if (existingEmail.emailVerifiedAt) {
-        throw new HttpError(409, "Email or username already in use");
-      }
-
-      const updatedUser = await prisma.user.update({
-        where: { id: existingEmail.id },
-        data: {
-          username: body.username,
-          firstName: body.firstName,
-          lastName: body.lastName,
-          birthDate: body.birthDate,
-          phoneNumber: body.phoneNumber,
-          gender: body.gender,
-          locale: body.locale,
-          theme: body.theme,
-          displayName,
-          passwordHash,
-          emailVerifiedAt: null,
-          verificationCodeHash: null,
-          verificationCodeExpiresAt: null,
-          verificationCodeSentAt: null,
-          resetCodeHash: null,
-          resetCodeExpiresAt: null,
-          resetCodeSentAt: null,
-          yowlScore: 100,
-          flames: 1
-        }
-      });
-
-      try {
-        const verification = await issueVerificationCode(updatedUser.id, updatedUser.email, displayName);
-
-        if (!verification.sent && !allowPreviewCode) {
-          await restoreRegistrationSnapshot(existingEmail);
-          throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
-        }
-
-        res.status(201).json({
-          requiresVerification: true,
-          email: updatedUser.email,
-          expiresAt: verification.expiresAt.toISOString(),
-          previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
+    const user = existingEmail
+      ? existingEmail.emailVerifiedAt
+        ? null
+        : await prisma.user.update({
+            where: { id: existingEmail.id },
+            data: userData
+          })
+      : await prisma.user.create({
+          data: userData
         });
-      } catch (verificationError) {
-        throw verificationError;
-      }
 
-      return;
+    if (!user) {
+      throw new HttpError(409, "Email or username already in use");
     }
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        username: body.username,
-        firstName: body.firstName,
-        lastName: body.lastName,
-        birthDate: body.birthDate,
-        phoneNumber: body.phoneNumber,
-        gender: body.gender,
-        locale: body.locale,
-        theme: body.theme,
-        pushNotificationsEnabled: true,
-        autoSaveEchoes: true,
-        displayName,
-        passwordHash,
-        yowlScore: 100,
-        flames: 1,
-        emailVerifiedAt: null,
-        verificationCodeHash: null,
-        verificationCodeExpiresAt: null,
-        verificationCodeSentAt: null
+    const deviceId = getOrCreateDeviceId(req, res);
+    const session = await prisma.session.upsert({
+      where: {
+        userId_deviceId: {
+          userId: user.id,
+          deviceId
+        }
+      },
+      update: {
+        refreshTokenHash: "",
+        userAgent: req.get("user-agent"),
+        ipAddress: getClientIp(req),
+        revokedAt: null
+      },
+      create: {
+        userId: user.id,
+        deviceId,
+        refreshTokenHash: "",
+        userAgent: req.get("user-agent"),
+        ipAddress: getClientIp(req)
       }
     });
 
-    try {
-      const verification = await issueVerificationCode(user.id, user.email, displayName);
+    const tokens = await issueTokens(user.id, session.id);
+    await prisma.session.update({
+      where: { id: session.id },
+      data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
+    });
+    setAuthCookies(res, tokens);
 
-      if (!verification.sent && !allowPreviewCode) {
-        await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
-        throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
-      }
-
-      res.status(201).json({
-        requiresVerification: true,
-        email: user.email,
-        expiresAt: verification.expiresAt.toISOString(),
-        previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
-      });
-    } catch (verificationError) {
-      await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
-      throw verificationError;
-    }
+    res.status(201).json(await buildAuthResponse(user.id));
   } catch (error) {
     next(error);
   }
@@ -448,10 +293,6 @@ router.post("/login", async (req, res, next) => {
 
     if (!user) {
       throw new HttpError(404, "Account niet gevonden");
-    }
-
-    if (!user.emailVerifiedAt) {
-      throw new HttpError(403, "Account niet bevestigd");
     }
 
     const valid = await bcrypt.compare(body.password, user.passwordHash);
@@ -505,20 +346,18 @@ router.post("/verification/resend", async (req, res, next) => {
     }
 
     if (user.emailVerifiedAt) {
-      throw new HttpError(409, "Account is al bevestigd");
+      res.status(410).json({ message: "E-mailverificatie is uitgeschakeld." });
+      return;
     }
 
-    const verification = await issueVerificationCode(user.id, user.email, user.displayName);
-
-    if (!verification.sent && !allowPreviewCode) {
-      throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
-    }
-
-    res.json({
-      sent: verification.sent,
-      expiresAt: verification.expiresAt.toISOString(),
-      previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerifiedAt: new Date()
+      }
     });
+
+    res.json({ sent: false, expiresAt: new Date().toISOString(), previewCode: undefined });
   } catch (error) {
     next(error);
   }
@@ -531,53 +370,6 @@ router.post("/verification/confirm", async (req, res, next) => {
 
     if (!user) {
       throw new HttpError(404, "Account niet gevonden");
-    }
-
-    if (user.emailVerifiedAt) {
-      const deviceId = getOrCreateDeviceId(req, res);
-      const session = await prisma.session.upsert({
-        where: {
-          userId_deviceId: {
-            userId: user.id,
-            deviceId
-          }
-        },
-        update: {
-          refreshTokenHash: "",
-          userAgent: req.get("user-agent"),
-          ipAddress: getClientIp(req),
-          revokedAt: null
-        },
-        create: {
-          userId: user.id,
-          deviceId,
-          refreshTokenHash: "",
-          userAgent: req.get("user-agent"),
-          ipAddress: getClientIp(req)
-        }
-      });
-
-      const tokens = await issueTokens(user.id, session.id);
-      await prisma.session.update({
-        where: { id: session.id },
-        data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
-      });
-      setAuthCookies(res, tokens);
-      res.json(await buildAuthResponse(user.id));
-      return;
-    }
-
-    if (!user.verificationCodeHash || !user.verificationCodeExpiresAt) {
-      throw new HttpError(400, "Bevestigingscode ontbreekt");
-    }
-
-    if (user.verificationCodeExpiresAt.getTime() < Date.now()) {
-      throw new HttpError(410, "Bevestigingscode verlopen");
-    }
-
-    const valid = await bcrypt.compare(body.code.trim(), user.verificationCodeHash);
-    if (!valid) {
-      throw new HttpError(401, "Ongeldige bevestigingscode");
     }
 
     await prisma.user.update({
@@ -616,7 +408,6 @@ router.post("/verification/confirm", async (req, res, next) => {
       data: { refreshTokenHash: await bcrypt.hash(tokens.refreshToken, 12) }
     });
     setAuthCookies(res, tokens);
-    await clearVerificationCode(user.id);
     res.json(await buildAuthResponse(user.id));
   } catch (error) {
     next(error);
@@ -692,26 +483,7 @@ router.get("/me", authenticateRequest, async (req: AuthenticatedRequest, res, ne
 
 router.post("/forgot-password", async (req, res, next) => {
   try {
-    const body = z.object({ email: z.string().email() }).parse(req.body);
-    const email = body.email.trim().toLowerCase();
-    const user = await prisma.user.findFirst({ where: { email } });
-
-    if (!user) {
-      throw new HttpError(404, "Account niet gevonden");
-    }
-
-    const reset = await issuePasswordResetCode(user.id, user.email, user.displayName);
-
-    if (!reset.sent && !allowPreviewCode) {
-      throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
-    }
-
-    res.json({
-      sent: reset.sent,
-      email: user.email,
-      expiresAt: reset.expiresAt.toISOString(),
-      previewCode: allowPreviewCode ? reset.previewCode ?? undefined : undefined
-    });
+    res.status(410).json({ message: "Wachtwoordherstel via e-mail is uitgeschakeld." });
   } catch (error) {
     next(error);
   }
@@ -719,43 +491,9 @@ router.post("/forgot-password", async (req, res, next) => {
 
 router.post("/reset-password", async (req, res, next) => {
   try {
-    const body = resetPasswordSchema.parse(req.body);
-    const email = body.email.trim().toLowerCase();
-    const user = await prisma.user.findFirst({ where: { email } });
-
-    if (!user) {
-      throw new HttpError(404, "Account niet gevonden");
-    }
-
-    if (!user.resetCodeHash || !user.resetCodeExpiresAt) {
-      throw new HttpError(400, "Herstelcode ontbreekt");
-    }
-
-    if (user.resetCodeExpiresAt.getTime() < Date.now()) {
-      throw new HttpError(410, "Herstelcode verlopen");
-    }
-
-    const valid = await bcrypt.compare(body.code.trim(), user.resetCodeHash);
-    if (!valid) {
-      throw new HttpError(401, "Ongeldige herstelcode");
-    }
-
-    const passwordHash = await bcrypt.hash(body.password, 12);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash
-      }
-    });
-
-    await prisma.session.updateMany({
-      where: { userId: user.id },
-      data: { revokedAt: new Date() }
-    });
-
-    await clearPasswordResetCode(user.id);
-
-    res.json({ ok: true });
+    const _body = resetPasswordSchema.parse(req.body);
+    void _body;
+    res.status(410).json({ message: "Wachtwoordherstel via e-mail is uitgeschakeld." });
   } catch (error) {
     next(error);
   }
