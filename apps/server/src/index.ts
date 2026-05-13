@@ -12,6 +12,8 @@ app.set("io", io);
 
 if (!hasSmtpConfig()) {
   console.warn("[mail] SMTP is not configured yet. Account verification and reset emails will not be delivered until SMTP_* env vars are set.");
+} else {
+  console.log("[mail] SMTP configured and ready for verification/reset emails.");
 }
 
 server.listen(env.PORT, () => {

@@ -40,6 +40,7 @@ YowlChat sends account verification and password reset codes through SMTP. If th
 
 Set these variables for production:
 
+- `SMTP_URL`
 - `SMTP_HOST`
 - `SMTP_PORT`
 - `SMTP_SECURE`

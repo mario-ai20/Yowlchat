@@ -5,7 +5,7 @@ let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 const allowPreviewCode = process.env.NODE_ENV !== "production";
 
 export function hasSmtpConfig() {
-  return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
+  return Boolean(env.SMTP_URL || (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD));
 }
 
 function getTransporter() {
@@ -17,15 +17,17 @@ function getTransporter() {
     return null;
   }
 
-  transporter = nodemailer.createTransport({
-    host: env.SMTP_HOST,
-    port: env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587),
-    secure: env.SMTP_SECURE ?? false,
-    auth: {
-      user: env.SMTP_USER,
-      pass: env.SMTP_PASSWORD
-    }
-  });
+  transporter = env.SMTP_URL
+    ? nodemailer.createTransport(env.SMTP_URL)
+    : nodemailer.createTransport({
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587),
+        secure: env.SMTP_SECURE ?? false,
+        auth: {
+          user: env.SMTP_USER,
+          pass: env.SMTP_PASSWORD
+        }
+      });
 
   return transporter;
 }
@@ -39,6 +41,14 @@ type CodeEmailOptions = {
 
 function resolveFromAddress() {
   return env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat";
+}
+
+function getSmtpDescription() {
+  if (env.SMTP_URL) {
+    return "SMTP_URL";
+  }
+
+  return `${env.SMTP_HOST ?? "unknown-host"}:${env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587)}`;
 }
 
 function maybePreviewCode(code: string) {
@@ -173,7 +183,9 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
     });
   } catch (error) {
     console.error(
-      "[verification-email] SMTP delivery failed; falling back to preview code for",
+      "[verification-email] SMTP delivery failed via",
+      getSmtpDescription(),
+      "for",
       options.to,
       error instanceof Error ? error.message : error
     );
@@ -201,7 +213,9 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
     });
   } catch (error) {
     console.error(
-      "[reset-email] SMTP delivery failed; falling back to preview code for",
+      "[reset-email] SMTP delivery failed via",
+      getSmtpDescription(),
+      "for",
       options.to,
       error instanceof Error ? error.message : error
     );
