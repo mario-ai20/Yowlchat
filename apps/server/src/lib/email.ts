@@ -4,7 +4,7 @@ import { env } from "./env.js";
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
 
 export function hasSmtpConfig() {
-  return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD && env.SMTP_FROM);
+  return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
 }
 
 function getTransporter() {
@@ -18,7 +18,7 @@ function getTransporter() {
 
   transporter = nodemailer.createTransport({
     host: env.SMTP_HOST,
-    port: env.SMTP_PORT ?? 587,
+    port: env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587),
     secure: env.SMTP_SECURE ?? false,
     auth: {
       user: env.SMTP_USER,
@@ -35,6 +35,10 @@ type CodeEmailOptions = {
   code: string;
   expiresMinutes: number;
 };
+
+function resolveFromAddress() {
+  return env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat";
+}
 
 function buildVerificationHtml({ displayName, code, expiresMinutes }: CodeEmailOptions) {
   return `<!doctype html>
@@ -155,13 +159,22 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
     return { sent: false as const, previewCode };
   }
 
-  await mailer.sendMail({
-    from: env.SMTP_FROM,
-    to: options.to,
-    subject: "Bevestig je Yowl account",
-    text: buildVerificationText(options),
-    html: buildVerificationHtml(options)
-  });
+  try {
+    await mailer.sendMail({
+      from: resolveFromAddress(),
+      to: options.to,
+      subject: "Bevestig je Yowl account",
+      text: buildVerificationText(options),
+      html: buildVerificationHtml(options)
+    });
+  } catch (error) {
+    console.error(
+      "[verification-email] SMTP delivery failed; falling back to preview code for",
+      options.to,
+      error instanceof Error ? error.message : error
+    );
+    return { sent: false as const, previewCode: options.code };
+  }
 
   return { sent: true as const };
 }
@@ -175,13 +188,22 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
     return { sent: false as const, previewCode };
   }
 
-  await mailer.sendMail({
-    from: env.SMTP_FROM,
-    to: options.to,
-    subject: "Reset je Yowl wachtwoord",
-    text: buildResetText(options),
-    html: buildResetHtml(options)
-  });
+  try {
+    await mailer.sendMail({
+      from: resolveFromAddress(),
+      to: options.to,
+      subject: "Reset je Yowl wachtwoord",
+      text: buildResetText(options),
+      html: buildResetHtml(options)
+    });
+  } catch (error) {
+    console.error(
+      "[reset-email] SMTP delivery failed; falling back to preview code for",
+      options.to,
+      error instanceof Error ? error.message : error
+    );
+    return { sent: false as const, previewCode: options.code };
+  }
 
   return { sent: true as const };
 }
