@@ -74,15 +74,6 @@ const updateMeSchema = z.object({
   isGhostMode: z.boolean().optional()
 });
 
-async function friendsCount(userId: string) {
-  return prisma.friendship.count({
-    where: {
-      status: "accepted",
-      OR: [{ requesterId: userId }, { addresseeId: userId }]
-    }
-  });
-}
-
 async function issueTokens(userId: string, sessionId: string) {
   return {
     accessToken: signAccessToken({ sub: userId, sessionId }),
@@ -182,10 +173,9 @@ async function syncCoreUserSafely(user: Parameters<typeof syncCoreUser>[0]) {
 
 async function buildAuthResponse(userId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  const friends = await friendsCount(userId);
   await syncCoreUserSafely(user);
   return {
-    user: serializeUser(user, { friendsCount: friends, isOnline: true })
+    user: serializeUser(user, { friendsCount: 0, isOnline: true })
   };
 }
 
@@ -442,7 +432,7 @@ router.post("/refresh", async (req, res, next) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: payload.sub } });
     await syncCoreUserSafely(user);
     res.json({
-      user: serializeUser(user, { friendsCount: await friendsCount(user.id), isOnline: true })
+      user: serializeUser(user, { friendsCount: 0, isOnline: true })
     });
   } catch (error) {
     next(error);
@@ -475,7 +465,7 @@ router.get("/me", authenticateRequest, async (req: AuthenticatedRequest, res, ne
     });
 
     await syncCoreUserSafely(user);
-    res.json(serializeUser(user, { friendsCount: await friendsCount(user.id), isOnline: true }));
+    res.json(serializeUser(user, { friendsCount: 0, isOnline: true }));
   } catch (error) {
     next(error);
   }
@@ -520,7 +510,7 @@ router.patch("/me", authenticateRequest, async (req: AuthenticatedRequest, res, 
     });
 
     await syncCoreUserSafely(user);
-    res.json(serializeUser(user, { friendsCount: await friendsCount(user.id), isOnline: true }));
+    res.json(serializeUser(user, { friendsCount: 0, isOnline: true }));
   } catch (error) {
     next(error);
   }
