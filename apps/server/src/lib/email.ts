@@ -1,5 +1,5 @@
 import { env } from "./env.js";
-import { accountsDb } from "./db.js";
+import { accountsDb, coreDb } from "./db.js";
 import nodemailer from "nodemailer";
 
 type MailTransporter = {
@@ -189,31 +189,40 @@ type CodeEmailOptions = {
 
 async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
   try {
-    const primaryRecord = await accountsDb.smtpConfiguration.findUnique({ where: { id: "primary" } });
-    const fallbackRecord = primaryRecord
-      ? null
-      : await accountsDb.smtpConfiguration.findFirst({
-          orderBy: { updatedAt: "desc" }
-        });
-    const record = primaryRecord ?? fallbackRecord;
+    const dbSources = [
+      { label: "accounts", client: accountsDb },
+      { label: "core", client: coreDb }
+    ] as const;
 
-    if (record && record.host.trim() && record.user.trim() && record.password) {
+    for (const source of dbSources) {
+      const primaryRecord = await source.client.smtpConfiguration.findUnique({ where: { id: "primary" } });
+      const fallbackRecord = primaryRecord
+        ? null
+        : await source.client.smtpConfiguration.findFirst({
+            orderBy: { updatedAt: "desc" }
+          });
+      const record = primaryRecord ?? fallbackRecord;
+
+      if (!record || !record.host.trim() || !record.user.trim() || !record.password) {
+        continue;
+      }
+
       const port = record.port ?? (record.secure ? 465 : 587);
       const host = record.host.trim();
       const user = record.user.trim();
       const isGmail = host.includes("gmail.com") || user.endsWith("@gmail.com");
-      const source = primaryRecord ? "primary" : "fallback";
+      const rowSource = primaryRecord ? "primary" : "fallback";
 
       if (!primaryRecord && fallbackRecord) {
         console.warn(
-          "[mail] SMTP primary row not found; using the latest smtpConfiguration row instead.",
+          `[mail] SMTP primary row not found in ${source.label} DB; using the latest smtpConfiguration row instead.`,
           { id: fallbackRecord.id, host: fallbackRecord.host, user: fallbackRecord.user }
         );
       }
 
       return {
-        signature: `db:${source}:${record.id}:${record.updatedAt.toISOString()}:${record.host}:${port}:${record.secure}:${record.user}:${record.from ?? ""}`,
-        description: `accounts database smtpConfiguration#${record.id}`,
+        signature: `db:${source.label}:${rowSource}:${record.id}:${record.updatedAt.toISOString()}:${record.host}:${port}:${record.secure}:${record.user}:${record.from ?? ""}`,
+        description: `${source.label} database smtpConfiguration#${record.id}`,
         user,
         transport: isGmail
           ? {
