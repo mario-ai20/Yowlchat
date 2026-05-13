@@ -13,6 +13,7 @@ import { serializeUser } from "../lib/serializers.js";
 import { APP_LOCALE_CODES, type AppLocale } from "@yowl/types";
 
 const router = Router();
+const allowPreviewCode = process.env.NODE_ENV !== "production";
 
 const usernameRegex = /^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$/;
 const usernameSchema = z.preprocess(
@@ -122,7 +123,7 @@ async function issueVerificationCode(userId: string, email: string, displayName:
     expiresMinutes: 10
   });
 
-  return { expiresAt, previewCode: delivery.sent ? null : delivery.previewCode ?? code };
+  return { expiresAt, previewCode: delivery.previewCode ?? null };
 }
 
 async function issuePasswordResetCode(userId: string, email: string, displayName: string) {
@@ -146,7 +147,7 @@ async function issuePasswordResetCode(userId: string, email: string, displayName
     expiresMinutes: 10
   });
 
-  return { expiresAt, previewCode: delivery.sent ? null : delivery.previewCode ?? code };
+  return { expiresAt, previewCode: delivery.previewCode ?? null };
 }
 
 function normalizeAppLocale(locale: string | null | undefined): AppLocale {
@@ -326,7 +327,7 @@ router.post("/register", async (req, res, next) => {
         requiresVerification: true,
         email: updatedUser.email,
         expiresAt: verification.expiresAt.toISOString(),
-        previewCode: verification.previewCode ?? undefined
+        previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
       });
       } catch (verificationError) {
         throw verificationError;
@@ -366,7 +367,7 @@ router.post("/register", async (req, res, next) => {
         requiresVerification: true,
         email: user.email,
         expiresAt: verification.expiresAt.toISOString(),
-        previewCode: verification.previewCode ?? undefined
+        previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
       });
     } catch (verificationError) {
       await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
@@ -453,7 +454,7 @@ router.post("/verification/resend", async (req, res, next) => {
     res.json({
       sent: !verification.previewCode,
       expiresAt: verification.expiresAt.toISOString(),
-      previewCode: verification.previewCode ?? undefined
+      previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
     });
   } catch (error) {
     next(error);
@@ -641,7 +642,7 @@ router.post("/forgot-password", async (req, res, next) => {
       sent: !reset.previewCode,
       email: user.email,
       expiresAt: reset.expiresAt.toISOString(),
-      previewCode: reset.previewCode ?? undefined
+      previewCode: allowPreviewCode ? reset.previewCode ?? undefined : undefined
     });
   } catch (error) {
     next(error);

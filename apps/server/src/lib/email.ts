@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { env } from "./env.js";
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+const allowPreviewCode = process.env.NODE_ENV !== "production";
 
 export function hasSmtpConfig() {
   return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
@@ -38,6 +39,10 @@ type CodeEmailOptions = {
 
 function resolveFromAddress() {
   return env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat";
+}
+
+function maybePreviewCode(code: string) {
+  return allowPreviewCode ? code : undefined;
 }
 
 function buildVerificationHtml({ displayName, code, expiresMinutes }: CodeEmailOptions) {
@@ -154,9 +159,8 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
   const mailer = getTransporter();
 
   if (!mailer) {
-    const previewCode = options.code;
-    console.warn("[verification-email] SMTP not configured; returning preview code for", options.to, options.code);
-    return { sent: false as const, previewCode };
+    console.warn("[verification-email] SMTP not configured on the server runtime for", options.to);
+    return { sent: false as const, previewCode: maybePreviewCode(options.code) };
   }
 
   try {
@@ -173,7 +177,7 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
       options.to,
       error instanceof Error ? error.message : error
     );
-    return { sent: false as const, previewCode: options.code };
+    return { sent: false as const, previewCode: maybePreviewCode(options.code) };
   }
 
   return { sent: true as const };
@@ -183,9 +187,8 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
   const mailer = getTransporter();
 
   if (!mailer) {
-    const previewCode = options.code;
-    console.warn("[reset-email] SMTP not configured; returning preview code for", options.to, options.code);
-    return { sent: false as const, previewCode };
+    console.warn("[reset-email] SMTP not configured on the server runtime for", options.to);
+    return { sent: false as const, previewCode: maybePreviewCode(options.code) };
   }
 
   try {
@@ -202,7 +205,7 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
       options.to,
       error instanceof Error ? error.message : error
     );
-    return { sent: false as const, previewCode: options.code };
+    return { sent: false as const, previewCode: maybePreviewCode(options.code) };
   }
 
   return { sent: true as const };
