@@ -24,6 +24,7 @@ type UserRecord = BaseRecord & {
 
 type SessionRecord = BaseRecord & {
   userId: string;
+  deviceId: string;
   refreshTokenHash: string;
   userAgent: string | null;
   ipAddress: string | null;
@@ -400,10 +401,37 @@ class MemoryPrisma {
   };
 
   session = {
+    upsert: async (args: any) => {
+      const existing = this.seed.sessions.find(
+        (entry) =>
+          entry.userId === args.where.userId_deviceId.userId && entry.deviceId === args.where.userId_deviceId.deviceId
+      );
+
+      if (existing) {
+        Object.assign(existing, args.update);
+        this.touch(existing);
+        return clone(existing);
+      }
+
+      const record: SessionRecord = {
+        id: id("sess"),
+        userId: args.create.userId,
+        deviceId: args.create.deviceId,
+        refreshTokenHash: args.create.refreshTokenHash,
+        userAgent: args.create.userAgent ?? null,
+        ipAddress: args.create.ipAddress ?? null,
+        revokedAt: null,
+        createdAt: now(),
+        updatedAt: now()
+      };
+      this.seed.sessions.push(record);
+      return clone(record);
+    },
     create: async (args: any) => {
       const record: SessionRecord = {
         id: id("sess"),
         userId: args.data.userId,
+        deviceId: args.data.deviceId,
         refreshTokenHash: args.data.refreshTokenHash,
         userAgent: args.data.userAgent ?? null,
         ipAddress: args.data.ipAddress ?? null,
