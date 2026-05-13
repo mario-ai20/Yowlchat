@@ -50,7 +50,7 @@ export default function Page() {
       });
 
       updateUser(result);
-      router.push("/");
+      router.replace("/chat");
     } catch (savingError) {
       setError(savingError instanceof Error ? savingError.message : "Could not save onboarding");
     } finally {

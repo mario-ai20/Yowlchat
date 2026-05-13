@@ -122,7 +122,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         });
 
         setAuth(result.user);
-        router.push("/onboarding");
+        router.replace("/chat");
         return;
       }
 
@@ -141,7 +141,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       }
 
       setAuth(authenticatedUser);
-      router.push("/onboarding");
+      router.replace("/chat");
     } catch (authError) {
       setError(formatAuthError(authError));
     } finally {
@@ -188,7 +188,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
 
   useEffect(() => {
     if (hydrated && sessionUser) {
-      router.push("/");
+      router.replace("/chat");
     }
   }, [hydrated, router, sessionUser]);
 
