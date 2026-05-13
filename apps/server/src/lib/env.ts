@@ -12,6 +12,8 @@ const schema = z.object({
   CORE_DATABASE_URL: z.string().optional(),
   POSTGRES_DATABASE_URL: z.string().optional(),
   DATABASE_URL: z.string().optional(),
+  SUPABASE_ACCOUNTS_URL: z.string().optional(),
+  SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_CORE_URL: z.string().optional(),
   SUPABASE_CORE_SERVICE_ROLE_KEY: z.string().optional(),
   SUPABASE_STORAGE_BUCKET: z.string().default("yowl-media"),

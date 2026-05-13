@@ -24,8 +24,10 @@ If you want the split setup, set:
 - `SUPABASE_ACCOUNTS_DATABASE_URL=<your Supabase URL for accounts>`
 - `SUPABASE_CORE_DATABASE_URL=<your Supabase URL for chats/media>`
 - `SUPABASE_ACCOUNTS_URL=<your Supabase project URL for accounts>`
+- `SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY=<your Supabase service role key for accounts>`
 - `SUPABASE_ACCOUNTS_PUBLISHABLE_KEY=<your Supabase anon/publishable key for accounts>`
 - `SUPABASE_CORE_URL=<your Supabase project URL for chats/media>`
+- `SUPABASE_CORE_SERVICE_ROLE_KEY=<your Supabase service role key for chats/media>`
 - `SUPABASE_CORE_PUBLISHABLE_KEY=<your Supabase anon/publishable key for chats/media>`
 
 Legacy aliases are also supported:
@@ -36,7 +38,7 @@ Legacy aliases are also supported:
 
 ## Email delivery
 
-YowlChat reads SMTP settings from the accounts database first. If no database row is found, it falls back to the SMTP environment variables. In production, preview codes are hidden and the app only uses real mail delivery.
+YowlChat reads SMTP settings from the accounts database first. If that does not work, it falls back to the accounts Supabase REST API, then the core database, then the core Supabase REST API, and finally the SMTP environment variables. In production, preview codes are hidden and the app only uses real mail delivery.
 
 Create this singleton table in the accounts database:
 
@@ -80,6 +82,10 @@ on conflict (id) do update set
 
 You can still set these variables for fallback or local development:
 
+- `SUPABASE_ACCOUNTS_URL`
+- `SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY`
+- `SUPABASE_CORE_URL`
+- `SUPABASE_CORE_SERVICE_ROLE_KEY`
 - `SMTP_URL`
 - `SMTP_HOST`
 - `SMTP_PORT`

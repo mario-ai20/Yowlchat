@@ -49,14 +49,161 @@ type SmtpRuntimeConfig = {
 };
 
 type SmtpDatabasePayload = {
-  id: "primary";
+  id: string;
   host: string;
   port: number;
   secure: boolean;
   user: string;
   password: string;
   from: string | null;
+  updatedAt?: Date;
 };
+
+type SupabaseSmtpRow = {
+  id?: string;
+  host?: string;
+  port?: number | string;
+  secure?: boolean | string;
+  user?: string;
+  password?: string;
+  from?: string | null;
+  updatedAt?: string | Date;
+};
+
+function normalizeSupabaseSmtpRow(row: SupabaseSmtpRow): SmtpDatabasePayload | null {
+  const host = typeof row.host === "string" ? row.host.trim() : "";
+  const user = typeof row.user === "string" ? row.user.trim() : "";
+  const password = typeof row.password === "string" ? row.password : "";
+  const port = typeof row.port === "string" ? Number(row.port) : row.port;
+  const secure = typeof row.secure === "string" ? row.secure.toLowerCase() === "true" : Boolean(row.secure);
+
+  if (!host || !user || !password) {
+    return null;
+  }
+
+  return {
+    id: typeof row.id === "string" && row.id.trim() ? row.id.trim() : "primary",
+    host,
+    port: Number.isFinite(port) && port ? Number(port) : secure ? 465 : 587,
+    secure,
+    user,
+    password,
+    from: typeof row.from === "string" && row.from.trim() ? row.from.trim() : null,
+    updatedAt: row.updatedAt ? new Date(row.updatedAt) : undefined
+  };
+}
+
+function createRuntimeConfigFromPayload(
+  payload: SmtpDatabasePayload,
+  sourceTag: string,
+  description: string
+): SmtpRuntimeConfig {
+  const port = payload.port ?? (payload.secure ? 465 : 587);
+  const host = payload.host.trim();
+  const user = payload.user.trim();
+  const isGmail = host.includes("gmail.com") || user.endsWith("@gmail.com");
+
+  return {
+    signature: `${sourceTag}:${payload.id}:${payload.updatedAt?.toISOString() ?? ""}:${host}:${port}:${payload.secure}:${user}:${payload.from ?? ""}`,
+    description,
+    user,
+    transport: isGmail
+      ? {
+          service: "gmail",
+          auth: {
+            user,
+            pass: payload.password
+          }
+        }
+      : {
+          host,
+          port,
+          secure: payload.secure || port === 465,
+          auth: {
+            user,
+            pass: payload.password
+          }
+        },
+    from: user
+  };
+}
+
+async function fetchSmtpConfigFromSupabaseRest(
+  label: "accounts" | "core",
+  baseUrl: string | undefined,
+  serviceRoleKey: string | undefined
+): Promise<SmtpRuntimeConfig | null> {
+  if (!baseUrl || !serviceRoleKey) {
+    return null;
+  }
+
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+  const headers = {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+    Accept: "application/json"
+  };
+
+  const queries = [
+    {
+      kind: "primary" as const,
+      searchParams: new URLSearchParams({
+        select: "id,host,port,secure,user,password,from,updatedAt",
+        id: "eq.primary",
+        limit: "1"
+      })
+    },
+    {
+      kind: "latest" as const,
+      searchParams: new URLSearchParams({
+        select: "id,host,port,secure,user,password,from,updatedAt",
+        order: "updatedAt.desc",
+        limit: "1"
+      })
+    }
+  ];
+
+  for (const query of queries) {
+    const response = await fetch(`${normalizedBaseUrl}/rest/v1/SmtpConfiguration?${query.searchParams.toString()}`, {
+      method: "GET",
+      headers
+    });
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      console.warn(
+        `[mail] Supabase REST lookup failed for ${label} SMTP config (${query.kind}) with status ${response.status}.`,
+        body || "(empty response body)"
+      );
+      continue;
+    }
+
+    const rows = (await response.json()) as SupabaseSmtpRow[];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      continue;
+    }
+
+    const payload = normalizeSupabaseSmtpRow(rows[0]);
+    if (!payload) {
+      continue;
+    }
+
+    if (query.kind === "latest") {
+      console.warn(
+        `[mail] SMTP primary row not found in ${label} Supabase REST; using the latest smtpConfiguration row instead.`,
+        { id: payload.id, host: payload.host, user: payload.user }
+      );
+    }
+
+    return createRuntimeConfigFromPayload(
+      payload,
+      `supabase-rest:${label}:${query.kind}`,
+      `${label} Supabase REST smtpConfiguration#${payload.id}`
+    );
+  }
+
+  return null;
+}
 
 function buildEnvConfig(): SmtpRuntimeConfig | null {
   if (env.SMTP_URL) {
@@ -246,6 +393,33 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
     }
   } catch (error) {
     console.warn("[mail] Failed to read SMTP config from accounts database:", error instanceof Error ? error.message : error);
+  }
+
+  const restSources = [
+    {
+      label: "accounts" as const,
+      baseUrl: env.SUPABASE_ACCOUNTS_URL,
+      serviceRoleKey: env.SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY
+    },
+    {
+      label: "core" as const,
+      baseUrl: env.SUPABASE_CORE_URL,
+      serviceRoleKey: env.SUPABASE_CORE_SERVICE_ROLE_KEY
+    }
+  ];
+
+  for (const source of restSources) {
+    try {
+      const config = await fetchSmtpConfigFromSupabaseRest(source.label, source.baseUrl, source.serviceRoleKey);
+      if (config) {
+        return config;
+      }
+    } catch (error) {
+      console.warn(
+        `[mail] Failed to read SMTP config from ${source.label} Supabase REST:`,
+        error instanceof Error ? error.message : error
+      );
+    }
   }
 
   const envConfig = buildEnvConfig();

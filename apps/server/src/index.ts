@@ -26,6 +26,9 @@ console.log(
     {
       accountsDatabase: hasAccountsDatabase ? "configured" : "missing",
       coreDatabase: hasCoreDatabase ? "configured" : "missing",
+      accountsSupabaseApi:
+        env.SUPABASE_ACCOUNTS_URL && env.SUPABASE_ACCOUNTS_SERVICE_ROLE_KEY ? "configured" : "missing",
+      coreSupabaseApi: env.SUPABASE_CORE_URL && env.SUPABASE_CORE_SERVICE_ROLE_KEY ? "configured" : "missing",
       port: env.PORT,
       nodeEnv: process.env.NODE_ENV ?? "unknown"
     },
