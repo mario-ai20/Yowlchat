@@ -63,7 +63,7 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
       description: "SMTP_URL environment variable",
       user: payload.user,
       transport: env.SMTP_URL,
-      from: env.SMTP_FROM ?? `YowlChat <${payload.user}>`
+      from: payload.user
     };
   }
 
@@ -86,7 +86,7 @@ function buildEnvConfig(): SmtpRuntimeConfig | null {
         pass: env.SMTP_PASSWORD
       }
     },
-    from: env.SMTP_FROM ?? `YowlChat <${env.SMTP_USER}>`
+    from: env.SMTP_USER
   };
 }
 
@@ -181,7 +181,7 @@ async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
             pass: record.password
           }
         },
-        from: record.from?.trim() || `YowlChat <${record.user.trim()}>`
+        from: record.user.trim()
       };
     }
   } catch (error) {
@@ -356,7 +356,6 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
       to: options.to,
       subject: "Bevestig je Yowl account",
       text: buildVerificationText(options),
-      envelope: { from: mailerHandle.config.user, to: options.to },
       html: buildVerificationHtml(options)
     });
     assertMailDelivery(info, mailerHandle.config.description);
@@ -390,7 +389,6 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
       to: options.to,
       subject: "Reset je Yowl wachtwoord",
       text: buildResetText(options),
-      envelope: { from: mailerHandle.config.user, to: options.to },
       html: buildResetHtml(options)
     });
     assertMailDelivery(info, mailerHandle.config.description);
