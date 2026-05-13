@@ -189,16 +189,30 @@ type CodeEmailOptions = {
 
 async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
   try {
-    const record = await accountsDb.smtpConfiguration.findUnique({ where: { id: "primary" } });
+    const primaryRecord = await accountsDb.smtpConfiguration.findUnique({ where: { id: "primary" } });
+    const fallbackRecord = primaryRecord
+      ? null
+      : await accountsDb.smtpConfiguration.findFirst({
+          orderBy: { updatedAt: "desc" }
+        });
+    const record = primaryRecord ?? fallbackRecord;
 
     if (record && record.host.trim() && record.user.trim() && record.password) {
       const port = record.port ?? (record.secure ? 465 : 587);
       const host = record.host.trim();
       const user = record.user.trim();
       const isGmail = host.includes("gmail.com") || user.endsWith("@gmail.com");
+      const source = primaryRecord ? "primary" : "fallback";
+
+      if (!primaryRecord && fallbackRecord) {
+        console.warn(
+          "[mail] SMTP primary row not found; using the latest smtpConfiguration row instead.",
+          { id: fallbackRecord.id, host: fallbackRecord.host, user: fallbackRecord.user }
+        );
+      }
 
       return {
-        signature: `db:${record.id}:${record.updatedAt.toISOString()}:${record.host}:${port}:${record.secure}:${record.user}:${record.from ?? ""}`,
+        signature: `db:${source}:${record.id}:${record.updatedAt.toISOString()}:${record.host}:${port}:${record.secure}:${record.user}:${record.from ?? ""}`,
         description: `accounts database smtpConfiguration#${record.id}`,
         user,
         transport: isGmail
