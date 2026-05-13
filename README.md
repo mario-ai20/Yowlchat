@@ -36,9 +36,49 @@ Legacy aliases are also supported:
 
 ## Email delivery
 
-YowlChat sends account verification and password reset codes through SMTP. If the SMTP variables are missing, the app will still run in development, but the server will only show preview codes and no real email will be delivered.
+YowlChat reads SMTP settings from the accounts database first. If no database row is found, it falls back to the SMTP environment variables. In production, preview codes are hidden and the app only uses real mail delivery.
 
-Set these variables for production:
+Create this singleton table in the accounts database:
+
+```sql
+create table if not exists "SmtpConfiguration" (
+  id text primary key,
+  host text not null,
+  port integer not null default 587,
+  secure boolean not null default false,
+  "user" text not null,
+  password text not null,
+  "from" text,
+  "createdAt" timestamp with time zone not null default now(),
+  "updatedAt" timestamp with time zone not null default now()
+);
+```
+
+Insert or update one row with id `primary`:
+
+```sql
+insert into "SmtpConfiguration" (
+  id, host, port, secure, "user", password, "from"
+) values (
+  'primary',
+  'smtp.your-provider.com',
+  587,
+  false,
+  'no-reply@yowl.chat',
+  'CHANGE_ME_SMTP_PASSWORD',
+  'YowlChat <no-reply@yowl.chat>'
+)
+on conflict (id) do update set
+  host = excluded.host,
+  port = excluded.port,
+  secure = excluded.secure,
+  "user" = excluded."user",
+  password = excluded.password,
+  "from" = excluded."from",
+  "updatedAt" = now();
+```
+
+You can still set these variables for fallback or local development:
 
 - `SMTP_URL`
 - `SMTP_HOST`

@@ -10,11 +10,14 @@ const io = createSocketServer(server);
 
 app.set("io", io);
 
-if (!hasSmtpConfig()) {
-  console.warn("[mail] SMTP is not configured yet. Account verification and reset emails will not be delivered until SMTP_* env vars are set.");
-} else {
+void hasSmtpConfig().then((configured) => {
+  if (!configured) {
+    console.warn("[mail] SMTP is not configured yet. Account verification and reset emails will not be delivered until the accounts DB SMTP record or SMTP_* env vars are set.");
+    return;
+  }
+
   console.log("[mail] SMTP configured and ready for verification/reset emails.");
-}
+});
 
 server.listen(env.PORT, () => {
   console.log(`YowlChat API listening on http://localhost:${env.PORT}`);

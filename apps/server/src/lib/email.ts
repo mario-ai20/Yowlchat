@@ -1,35 +1,68 @@
-import nodemailer from "nodemailer";
 import { env } from "./env.js";
+import { accountsDb } from "./db.js";
+import nodemailer from "nodemailer";
 
-let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+type MailTransporter = {
+  sendMail: (options: {
+    from: string;
+    to: string;
+    subject: string;
+    text: string;
+    html: string;
+  }) => Promise<unknown>;
+};
+
+let transporter: MailTransporter | null = null;
+let transporterSignature: string | null = null;
 const allowPreviewCode = process.env.NODE_ENV !== "production";
 
-export function hasSmtpConfig() {
-  return Boolean(env.SMTP_URL || (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD));
-}
+type SmtpRuntimeConfig = {
+  signature: string;
+  description: string;
+  transport:
+    | string
+    | {
+        host: string;
+        port: number;
+        secure: boolean;
+        auth: {
+          user: string;
+          pass: string;
+        };
+      };
+  from: string;
+};
 
-function getTransporter() {
-  if (transporter) {
-    return transporter;
+function buildEnvConfig(): SmtpRuntimeConfig | null {
+  if (env.SMTP_URL) {
+    return {
+      signature: `env-url:${env.SMTP_URL}`,
+      description: "SMTP_URL environment variable",
+      transport: env.SMTP_URL,
+      from: env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat"
+    };
   }
 
-  if (!hasSmtpConfig()) {
+  if (!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD)) {
     return null;
   }
 
-  transporter = env.SMTP_URL
-    ? nodemailer.createTransport(env.SMTP_URL)
-    : nodemailer.createTransport({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587),
-        secure: env.SMTP_SECURE ?? false,
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASSWORD
-        }
-      });
+  const port = env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587);
 
-  return transporter;
+  return {
+    signature: `env-host:${env.SMTP_HOST}:${port}:${env.SMTP_SECURE ?? false}:${env.SMTP_USER}:${env.SMTP_FROM ?? ""}`,
+    description: `environment SMTP host ${env.SMTP_HOST}:${port}`,
+    transport: {
+      host: env.SMTP_HOST,
+      port,
+      secure: env.SMTP_SECURE ?? false,
+      auth: {
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASSWORD
+      }
+    },
+    from: env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat"
+  };
 }
 
 type CodeEmailOptions = {
@@ -39,20 +72,58 @@ type CodeEmailOptions = {
   expiresMinutes: number;
 };
 
-function resolveFromAddress() {
-  return env.SMTP_FROM ?? env.SMTP_USER ?? "no-reply@yowl.chat";
-}
+async function resolveSmtpConfig(): Promise<SmtpRuntimeConfig | null> {
+  try {
+    const record = await accountsDb.smtpConfiguration.findUnique({ where: { id: "primary" } });
 
-function getSmtpDescription() {
-  if (env.SMTP_URL) {
-    return "SMTP_URL";
+    if (record && record.host.trim() && record.user.trim() && record.password) {
+      const port = record.port ?? (record.secure ? 465 : 587);
+
+      return {
+        signature: `db:${record.id}:${record.updatedAt.toISOString()}:${record.host}:${port}:${record.secure}:${record.user}:${record.from ?? ""}`,
+        description: `accounts database smtpConfiguration#${record.id}`,
+        transport: {
+          host: record.host.trim(),
+          port,
+          secure: record.secure,
+          auth: {
+            user: record.user.trim(),
+            pass: record.password
+          }
+        },
+        from: record.from?.trim() || record.user.trim()
+      };
+    }
+  } catch (error) {
+    console.warn("[mail] Failed to read SMTP config from accounts database:", error instanceof Error ? error.message : error);
   }
 
-  return `${env.SMTP_HOST ?? "unknown-host"}:${env.SMTP_PORT ?? (env.SMTP_SECURE ? 465 : 587)}`;
+  return buildEnvConfig();
 }
 
 function maybePreviewCode(code: string) {
   return allowPreviewCode ? code : undefined;
+}
+
+export async function hasSmtpConfig() {
+  return Boolean(await resolveSmtpConfig());
+}
+
+async function getTransporter() {
+  const config = await resolveSmtpConfig();
+
+  if (!config) {
+    return null;
+  }
+
+  let currentTransporter: MailTransporter | null = transporter;
+  if (!currentTransporter || transporterSignature !== config.signature) {
+    currentTransporter = nodemailer.createTransport(config.transport as never) as unknown as MailTransporter;
+    transporter = currentTransporter;
+    transporterSignature = config.signature;
+  }
+
+  return { transporter: currentTransporter!, config };
 }
 
 function buildVerificationHtml({ displayName, code, expiresMinutes }: CodeEmailOptions) {
@@ -166,16 +237,16 @@ function buildResetText({ displayName, code, expiresMinutes }: CodeEmailOptions)
 }
 
 export async function sendVerificationEmail(options: CodeEmailOptions) {
-  const mailer = getTransporter();
+  const mailerHandle = await getTransporter();
 
-  if (!mailer) {
+  if (!mailerHandle) {
     console.warn("[verification-email] SMTP not configured on the server runtime for", options.to);
     return { sent: false as const, previewCode: maybePreviewCode(options.code) };
   }
 
   try {
-    await mailer.sendMail({
-      from: resolveFromAddress(),
+    await mailerHandle.transporter.sendMail({
+      from: mailerHandle.config.from,
       to: options.to,
       subject: "Bevestig je Yowl account",
       text: buildVerificationText(options),
@@ -184,7 +255,7 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
   } catch (error) {
     console.error(
       "[verification-email] SMTP delivery failed via",
-      getSmtpDescription(),
+      mailerHandle.config.description,
       "for",
       options.to,
       error instanceof Error ? error.message : error
@@ -196,16 +267,16 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
 }
 
 export async function sendPasswordResetEmail(options: CodeEmailOptions) {
-  const mailer = getTransporter();
+  const mailerHandle = await getTransporter();
 
-  if (!mailer) {
+  if (!mailerHandle) {
     console.warn("[reset-email] SMTP not configured on the server runtime for", options.to);
     return { sent: false as const, previewCode: maybePreviewCode(options.code) };
   }
 
   try {
-    await mailer.sendMail({
-      from: resolveFromAddress(),
+    await mailerHandle.transporter.sendMail({
+      from: mailerHandle.config.from,
       to: options.to,
       subject: "Reset je Yowl wachtwoord",
       text: buildResetText(options),
@@ -214,7 +285,7 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
   } catch (error) {
     console.error(
       "[reset-email] SMTP delivery failed via",
-      getSmtpDescription(),
+      mailerHandle.config.description,
       "for",
       options.to,
       error instanceof Error ? error.message : error

@@ -28,6 +28,18 @@ type UserRecord = BaseRecord & {
   lastSeenAt: Date | null;
 };
 
+type SmtpConfigurationRecord = {
+  id: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  password: string;
+  from: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 type SessionRecord = BaseRecord & {
   userId: string;
   refreshTokenHash: string;
@@ -134,6 +146,7 @@ type LocationPingRecord = BaseRecord & {
 
 type Seed = {
   users: UserRecord[];
+  smtpConfigurations: SmtpConfigurationRecord[];
   sessions: SessionRecord[];
   chats: ChatRecord[];
   chatParticipants: ChatParticipantRecord[];
@@ -193,6 +206,12 @@ function matchesUserWhere(user: UserRecord, where: any) {
   if (where.OR?.length) {
     return where.OR.some((branch: any) => matchesUserWhere(user, branch));
   }
+  return true;
+}
+
+function matchesSmtpConfigurationWhere(config: SmtpConfigurationRecord, where: any) {
+  if (!where) return true;
+  if (where.id && config.id !== where.id) return false;
   return true;
 }
 
@@ -295,6 +314,7 @@ function enrichLocationPing(ping: LocationPingRecord, seed: Seed) {
 function initialSeed(): Seed {
   return {
     users: [],
+    smtpConfigurations: [],
     sessions: [],
     chats: [],
     chatParticipants: [],
@@ -408,6 +428,54 @@ class MemoryPrisma {
       if (index === -1) throw new Error("User not found");
       const [deleted] = this.seed.users.splice(index, 1);
       return clone(deleted);
+    }
+  };
+
+  smtpConfiguration = {
+    findUnique: async (args: any) => {
+      const record = this.seed.smtpConfigurations.find((entry) => entry.id === args.where.id);
+      return record ? clone(record) : null;
+    },
+    findFirst: async (args: any = {}) => {
+      const config = this.seed.smtpConfigurations.find((entry) => matchesSmtpConfigurationWhere(entry, args.where));
+      return config ? clone(config) : null;
+    },
+    findMany: async (args: any = {}) => {
+      let configs = this.seed.smtpConfigurations.filter((entry) => matchesSmtpConfigurationWhere(entry, args.where));
+      configs = applyOrder(configs, args.orderBy);
+      return clone(configs);
+    },
+    create: async (args: any) => {
+      const record: SmtpConfigurationRecord = {
+        id: args.data.id ?? "primary",
+        host: args.data.host,
+        port: args.data.port ?? 587,
+        secure: args.data.secure ?? false,
+        user: args.data.user,
+        password: args.data.password,
+        from: args.data.from ?? null,
+        createdAt: now(),
+        updatedAt: now()
+      };
+      this.seed.smtpConfigurations.push(record);
+      return clone(record);
+    },
+    update: async (args: any) => {
+      const record = this.seed.smtpConfigurations.find((entry) => entry.id === args.where.id);
+      if (!record) throw new Error("SMTP configuration not found");
+      Object.assign(record, args.data);
+      this.touch(record);
+      return clone(record);
+    },
+    upsert: async (args: any) => {
+      const record = this.seed.smtpConfigurations.find((entry) => entry.id === args.where.id);
+      if (record) {
+        Object.assign(record, args.update);
+        this.touch(record);
+        return clone(record);
+      }
+      const created = await this.smtpConfiguration.create({ data: { id: args.where.id, ...args.create } });
+      return created;
     }
   };
 
