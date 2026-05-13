@@ -27,6 +27,12 @@ type LoginResponse = {
   user: YowlUser;
 };
 
+type ResendResponse = {
+  sent: boolean;
+  expiresAt: string;
+  previewCode?: string;
+};
+
 function AuthField({
   label,
   helper,
@@ -172,6 +178,25 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       setAuth(authenticatedUser);
       router.push("/onboarding");
     } catch (authError) {
+      if (mode === "register" && authError instanceof ApiError && authError.status === 409) {
+        try {
+          const resend = await apiFetch<ResendResponse>("/auth/verification/resend", {
+            method: "POST",
+            body: JSON.stringify({ email: registerEmail.trim() })
+          });
+
+          const previewQuery = resend.previewCode ? `&preview=${encodeURIComponent(resend.previewCode)}` : "";
+          router.push(`/verify-account?email=${encodeURIComponent(registerEmail.trim())}${previewQuery}`);
+          return;
+        } catch (resendError) {
+          const resendMessage = resendError instanceof Error ? resendError.message.toLowerCase() : "";
+          if (resendMessage.includes("al bevestigd") || resendMessage.includes("already confirmed")) {
+            setError("Dit e-mailadres heeft al een account. Log in of gebruik een ander e-mailadres.");
+            return;
+          }
+        }
+      }
+
       if (mode === "login" && authError instanceof ApiError && authError.status === 403) {
         const message = authError.message.toLowerCase();
         if (message.includes("bevestig") || message.includes("verifi") || message.includes("confirm")) {
