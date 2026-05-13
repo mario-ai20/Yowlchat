@@ -9,7 +9,12 @@ type MailTransporter = {
     subject: string;
     text: string;
     html: string;
-  }) => Promise<unknown>;
+  }) => Promise<{
+    accepted?: string[];
+    rejected?: string[];
+    response?: string;
+    envelope?: { from?: string; to?: string | string[] };
+  }>;
 };
 
 let transporter: MailTransporter | null = null;
@@ -189,6 +194,22 @@ function maybePreviewCode(code: string) {
   return allowPreviewCode ? code : undefined;
 }
 
+function assertMailDelivery(
+  result: Awaited<ReturnType<MailTransporter["sendMail"]>>,
+  recipient: string,
+  description: string
+) {
+  const accepted = result.accepted ?? [];
+  const rejected = result.rejected ?? [];
+  const delivered = accepted.includes(recipient) || accepted.length > 0 || Boolean(result.response?.trim());
+
+  if (rejected.length > 0 || !delivered) {
+    throw new Error(
+      `SMTP provider rejected the message via ${description}${rejected.length ? ` (rejected: ${rejected.join(", ")})` : ""}`
+    );
+  }
+}
+
 export async function hasSmtpConfig() {
   return Boolean(await resolveSmtpConfig());
 }
@@ -329,13 +350,15 @@ export async function sendVerificationEmail(options: CodeEmailOptions) {
   }
 
   try {
-    await mailerHandle.transporter.sendMail({
+    const info = await mailerHandle.transporter.sendMail({
       from: mailerHandle.config.from,
       to: options.to,
       subject: "Bevestig je Yowl account",
       text: buildVerificationText(options),
       html: buildVerificationHtml(options)
     });
+    assertMailDelivery(info, options.to, mailerHandle.config.description);
+    console.info("[verification-email] SMTP accepted message for", options.to, "via", mailerHandle.config.description);
   } catch (error) {
     console.error(
       "[verification-email] SMTP delivery failed via",
@@ -359,13 +382,15 @@ export async function sendPasswordResetEmail(options: CodeEmailOptions) {
   }
 
   try {
-    await mailerHandle.transporter.sendMail({
+    const info = await mailerHandle.transporter.sendMail({
       from: mailerHandle.config.from,
       to: options.to,
       subject: "Reset je Yowl wachtwoord",
       text: buildResetText(options),
       html: buildResetHtml(options)
     });
+    assertMailDelivery(info, options.to, mailerHandle.config.description);
+    console.info("[reset-email] SMTP accepted message for", options.to, "via", mailerHandle.config.description);
   } catch (error) {
     console.error(
       "[reset-email] SMTP delivery failed via",

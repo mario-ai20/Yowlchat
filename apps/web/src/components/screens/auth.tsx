@@ -95,6 +95,10 @@ function formatAuthError(error: unknown, mode: AuthMode) {
     return "Kies een geldige username.";
   }
 
+  if (lower.includes("e-mail versturen mislukt") || lower.includes("smtp")) {
+    return "We konden de e-mail niet versturen. Probeer het opnieuw.";
+  }
+
   return fallback;
 }
 

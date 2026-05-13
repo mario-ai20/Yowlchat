@@ -123,7 +123,7 @@ async function issueVerificationCode(userId: string, email: string, displayName:
     expiresMinutes: 10
   });
 
-  return { expiresAt, previewCode: delivery.previewCode ?? null };
+  return { expiresAt, sent: delivery.sent, previewCode: delivery.previewCode ?? null };
 }
 
 async function issuePasswordResetCode(userId: string, email: string, displayName: string) {
@@ -147,7 +147,55 @@ async function issuePasswordResetCode(userId: string, email: string, displayName
     expiresMinutes: 10
   });
 
-  return { expiresAt, previewCode: delivery.previewCode ?? null };
+  return { expiresAt, sent: delivery.sent, previewCode: delivery.previewCode ?? null };
+}
+
+async function restoreRegistrationSnapshot(user: {
+  id: string;
+  username: string;
+  firstName: string | null;
+  lastName: string | null;
+  birthDate: Date | null;
+  phoneNumber: string | null;
+  gender: string | null;
+  locale: string;
+  theme: string;
+  displayName: string;
+  passwordHash: string;
+  emailVerifiedAt: Date | null;
+  verificationCodeHash: string | null;
+  verificationCodeExpiresAt: Date | null;
+  verificationCodeSentAt: Date | null;
+  resetCodeHash: string | null;
+  resetCodeExpiresAt: Date | null;
+  resetCodeSentAt: Date | null;
+  yowlScore: number;
+  flames: number;
+}) {
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      birthDate: user.birthDate,
+      phoneNumber: user.phoneNumber,
+      gender: user.gender,
+      locale: user.locale,
+      theme: user.theme,
+      displayName: user.displayName,
+      passwordHash: user.passwordHash,
+      emailVerifiedAt: user.emailVerifiedAt,
+      verificationCodeHash: user.verificationCodeHash,
+      verificationCodeExpiresAt: user.verificationCodeExpiresAt,
+      verificationCodeSentAt: user.verificationCodeSentAt,
+      resetCodeHash: user.resetCodeHash,
+      resetCodeExpiresAt: user.resetCodeExpiresAt,
+      resetCodeSentAt: user.resetCodeSentAt,
+      yowlScore: user.yowlScore,
+      flames: user.flames
+    }
+  });
 }
 
 function normalizeAppLocale(locale: string | null | undefined): AppLocale {
@@ -323,12 +371,17 @@ router.post("/register", async (req, res, next) => {
       try {
         const verification = await issueVerificationCode(updatedUser.id, updatedUser.email, displayName);
 
-      res.status(201).json({
-        requiresVerification: true,
-        email: updatedUser.email,
-        expiresAt: verification.expiresAt.toISOString(),
-        previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
-      });
+        if (!verification.sent && !allowPreviewCode) {
+          await restoreRegistrationSnapshot(existingEmail);
+          throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
+        }
+
+        res.status(201).json({
+          requiresVerification: true,
+          email: updatedUser.email,
+          expiresAt: verification.expiresAt.toISOString(),
+          previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
+        });
       } catch (verificationError) {
         throw verificationError;
       }
@@ -362,6 +415,11 @@ router.post("/register", async (req, res, next) => {
 
     try {
       const verification = await issueVerificationCode(user.id, user.email, displayName);
+
+      if (!verification.sent && !allowPreviewCode) {
+        await prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
+        throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
+      }
 
       res.status(201).json({
         requiresVerification: true,
@@ -451,8 +509,13 @@ router.post("/verification/resend", async (req, res, next) => {
     }
 
     const verification = await issueVerificationCode(user.id, user.email, user.displayName);
+
+    if (!verification.sent && !allowPreviewCode) {
+      throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
+    }
+
     res.json({
-      sent: !verification.previewCode,
+      sent: verification.sent,
       expiresAt: verification.expiresAt.toISOString(),
       previewCode: allowPreviewCode ? verification.previewCode ?? undefined : undefined
     });
@@ -638,8 +701,13 @@ router.post("/forgot-password", async (req, res, next) => {
     }
 
     const reset = await issuePasswordResetCode(user.id, user.email, user.displayName);
+
+    if (!reset.sent && !allowPreviewCode) {
+      throw new HttpError(503, "E-mail versturen mislukt. Probeer later opnieuw.");
+    }
+
     res.json({
-      sent: !reset.previewCode,
+      sent: reset.sent,
       email: user.email,
       expiresAt: reset.expiresAt.toISOString(),
       previewCode: allowPreviewCode ? reset.previewCode ?? undefined : undefined
