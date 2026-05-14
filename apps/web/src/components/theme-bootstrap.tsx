@@ -40,7 +40,7 @@ export function ThemeBootstrap() {
         }
       })
       .catch(() => {
-        if (!cancelled) {
+        if (!cancelled && !useSessionStore.getState().user) {
           clearAuth();
         }
       })
